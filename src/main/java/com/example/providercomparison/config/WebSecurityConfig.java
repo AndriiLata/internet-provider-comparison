@@ -11,7 +11,7 @@ public class WebSecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // Allow all requests without login:
+        // Allow all requests without login:::
         http
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().permitAll()
