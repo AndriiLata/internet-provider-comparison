@@ -31,4 +31,26 @@ public class OfferServiceImpl implements OfferService {
                 })
                 .toList();
     }
+
+    @Override
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamOffers(SearchCriteria criteria) {
+        var emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(0L);
+        java.util.concurrent.Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                var ids = servusSpeedClient.getAvailableProducts(criteria);
+                if (ids != null) {
+                    for (var id : ids) {
+                        var detail = servusSpeedClient.getProductDetails(id, criteria);
+                        var dto = ServusSpeedMapper.toDto(id, detail);
+                        emitter.send(dto, org.springframework.http.MediaType.APPLICATION_JSON);
+                    }
+                }
+                emitter.complete();
+            } catch (Exception e) {
+                emitter.completeWithError(e);
+            }
+        });
+        return emitter;
+    }
+
 }

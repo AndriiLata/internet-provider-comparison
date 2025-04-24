@@ -18,9 +18,9 @@ public class ServusSpeedClientImpl implements ServusSpeedClient {
     private final WebClient webClient;
 
     public ServusSpeedClientImpl(
-            @Value("${servusspeed.base-url}") String baseUrl,
-            @Value("${servusspeed.username}") String user,
-            @Value("${servusspeed.password}") String pw
+            @Value("${provider.servusspeed.base-url}") String baseUrl,
+            @Value("${provider.servusspeed.username}") String user,
+            @Value("${provider.servusspeed.password}") String pw
     ) {
         this.webClient = WebClient.builder()
                 .baseUrl(baseUrl)
@@ -75,5 +75,6 @@ public class ServusSpeedClientImpl implements ServusSpeedClient {
                 .bodyToMono(DetailedResponseData.class)
                 .block();
     }
+
 }
 
