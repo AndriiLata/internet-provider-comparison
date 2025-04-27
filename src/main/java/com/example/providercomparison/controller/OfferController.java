@@ -21,10 +21,6 @@ public class OfferController {
         this.offerService = offerService;
     }
 
-    @PostMapping
-    public List<OfferResponseDto> searchOffers(@RequestBody SearchCriteria criteria) {
-        return offerService.searchOffers(criteria);
-    }
 
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamOffers(@RequestBody SearchCriteria criteria) {
