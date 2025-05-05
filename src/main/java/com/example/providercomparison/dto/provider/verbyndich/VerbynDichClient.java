@@ -8,7 +8,6 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 public interface VerbynDichClient {
-    List<OfferResponseDto> getOffers(SearchCriteria criteria);
 
     Mono<VerbynDichResponse> fetchRawPage(SearchCriteria criteria, int page);
 }
