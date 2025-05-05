@@ -25,6 +25,7 @@ public class OfferServiceImpl implements OfferService {
         SseEmitter emitter = new SseEmitter(0L);
 
         Flux.merge(providers.stream().map(p -> p.offers(criteria)).toList())
+                //.filter(criteria::matches) -> ToDo: this is to filter the results, so I have to activate it later
                 .doOnNext(dto -> safeSend(emitter, dto))
                 .doOnError(emitter::completeWithError)
                 .doOnComplete(emitter::complete)
