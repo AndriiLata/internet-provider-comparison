@@ -37,19 +37,12 @@ class WebWunderClientImpl implements WebWunderClient {
 
     @Override
     public Mono<Output> fetchOffers(LegacyGetInternetOffers request) {
-
         return Mono.fromCallable(() -> xml.writeValueAsString(request))
                 .map(this::wrapInEnvelope)
                 .flatMap(this::callService)
                 .map(this::stripEnvelope)
                 .map(this::deserialize)
-                .retryWhen(
-                        Retry.backoff(2, Duration.ofSeconds(1)) // 2 retries → 3 total attempts
-                                .jitter(0.3)                      // add 30 % randomness
-                                .filter(WebWunderClientImpl::isTransient)
-                                .onRetryExhaustedThrow(
-                                        (spec, sig) -> sig.failure() )  // bubble the last error
-                )
+                .retryWhen(TRANSIENT_RETRY)
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -73,20 +66,6 @@ class WebWunderClientImpl implements WebWunderClient {
 
 
     /* ---------------- small helpers ---------------- */
-    private static boolean isTransient(Throwable ex) {
-        if (ex instanceof WebWunderException wwe) {
-            HttpStatus s = wwe.status;
-            if (s == HttpStatus.INTERNAL_SERVER_ERROR   // 500
-                    || s == HttpStatus.BAD_GATEWAY          // 502
-                    || s == HttpStatus.SERVICE_UNAVAILABLE  // 503
-                    || s == HttpStatus.GATEWAY_TIMEOUT) {   // 504
-                return true;
-            }
-            return wwe.getMessage()                     // SOAP fault text
-                    .toLowerCase().contains("temporär");   // “temporarily…”
-        }
-        return false;
-    }
 
     private String wrapInEnvelope(String body) {
         return """
@@ -134,6 +113,25 @@ class WebWunderClientImpl implements WebWunderClient {
         xml.setDefaultUseWrapper(false);
         return xml;
     }
+
+    private static boolean isTransient(Throwable ex) {
+        if (ex instanceof WebWunderException w) {
+            return switch (w.status) {
+                case INTERNAL_SERVER_ERROR, BAD_GATEWAY,
+                     SERVICE_UNAVAILABLE, GATEWAY_TIMEOUT -> true;
+                default -> w.getMessage().toLowerCase().contains("temporär");
+            };
+        }
+        return false;
+    }
+
+    /* 2.  pre‑built Retry spec: max 4 retries (⇒ 5 attempts) */
+    private static final Retry TRANSIENT_RETRY =
+            Retry.backoff(4, Duration.ofSeconds(1))   // 1,2,4,8 s
+                    .jitter(0.3)
+                    .filter(WebWunderClientImpl::isTransient)
+                    .onRetryExhaustedThrow((spec, sig) -> sig.failure());
+
 
     /** unchecked but rich with info */
     public static final class WebWunderException extends RuntimeException {

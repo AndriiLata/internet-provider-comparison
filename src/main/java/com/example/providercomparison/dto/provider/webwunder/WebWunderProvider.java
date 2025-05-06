@@ -5,8 +5,11 @@ import com.example.providercomparison.dto.provider.webwunder.model.LegacyGetInte
 import com.example.providercomparison.dto.ui.OfferResponseDto;
 import com.example.providercomparison.dto.ui.SearchCriteria;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -14,48 +17,40 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WebWunderProvider implements OfferProvider {
 
-    private final WebWunderClient  client;
-    private final WebWunderMapper  mapper;
+    private static final Logger log =
+            LoggerFactory.getLogger(WebWunderProvider.class);
+
+    private final WebWunderClient client;
+    private final WebWunderMapper mapper;
 
     @Override
     public Flux<OfferResponseDto> offers(SearchCriteria criteria) {
 
-        /* Decide which connectionEnums to request */
-        List<LegacyGetInternetOffers.ConnectionType> types;
+        /* 1 ─ decide which connectionEnums to request */
+        List<LegacyGetInternetOffers.ConnectionType> types = mapTypes(criteria.connectionType());
 
-        if (criteria.connectionType() == null || criteria.connectionType().isBlank()) {
-            types = List.of(
-                    LegacyGetInternetOffers.ConnectionType.DSL,
-                    LegacyGetInternetOffers.ConnectionType.CABLE,
-                    LegacyGetInternetOffers.ConnectionType.FIBER,
-                    LegacyGetInternetOffers.ConnectionType.MOBILE
-            );
-        } else {
-            try {
-                types = List.of(
-                        LegacyGetInternetOffers.ConnectionType.valueOf(
-                                criteria.connectionType().trim().toUpperCase())
-                );
-            } catch (IllegalArgumentException ex) {
-                // unknown string ⇒ ask all four so user still gets results
-                types = List.of(
-                        LegacyGetInternetOffers.ConnectionType.DSL,
-                        LegacyGetInternetOffers.ConnectionType.CABLE,
-                        LegacyGetInternetOffers.ConnectionType.FIBER,
-                        LegacyGetInternetOffers.ConnectionType.MOBILE
-                );
-            }
-        }
-
-        /* Call WebWunder once per type and merge the fluxes */
+        /* 2 ─ call WebWunder once per type and merge the fluxes */
         return Flux.merge(
                 types.stream().map(t ->
                         client.fetchOffers(mapper.from(criteria, t))
+                                .doOnError(e ->
+                                        log.warn("WebWunder {} failed after retries: {}", t, e.toString()))
+                                .onErrorResume(e -> Mono.empty())          // graceful fallback
                                 .flatMapMany(out -> Flux.fromIterable(mapper.toDtos(out)))
-                                .onErrorContinue((e, v) ->
-                                        System.err.println("WebWunder " + t + " failed: " + e))
                 ).toList()
         );
     }
-}
 
+    /* helper: blank → all four, otherwise parse the enum */
+    private static List<LegacyGetInternetOffers.ConnectionType> mapTypes(String sel) {
+        if (sel == null || sel.isBlank()) {
+            return List.of(LegacyGetInternetOffers.ConnectionType.values());
+        }
+        try {
+            return List.of(LegacyGetInternetOffers.ConnectionType
+                    .valueOf(sel.trim().toUpperCase()));
+        } catch (IllegalArgumentException ex) {           // unknown string
+            return List.of(LegacyGetInternetOffers.ConnectionType.values());
+        }
+    }
+}
