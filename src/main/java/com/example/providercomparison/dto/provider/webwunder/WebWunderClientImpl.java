@@ -14,7 +14,9 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,14 +37,22 @@ class WebWunderClientImpl implements WebWunderClient {
 
     @Override
     public Mono<Output> fetchOffers(LegacyGetInternetOffers request) {
+
         return Mono.fromCallable(() -> xml.writeValueAsString(request))
                 .map(this::wrapInEnvelope)
                 .flatMap(this::callService)
                 .map(this::stripEnvelope)
                 .map(this::deserialize)
-                // SOAP is blocking; run on a boundedElastic worker
+                .retryWhen(
+                        Retry.backoff(2, Duration.ofSeconds(1)) // 2 retries → 3 total attempts
+                                .jitter(0.3)                      // add 30 % randomness
+                                .filter(WebWunderClientImpl::isTransient)
+                                .onRetryExhaustedThrow(
+                                        (spec, sig) -> sig.failure() )  // bubble the last error
+                )
                 .subscribeOn(Schedulers.boundedElastic());
     }
+
 
     private Mono<String> callService(String soapBody) {
         return webClient.post()
@@ -63,6 +73,20 @@ class WebWunderClientImpl implements WebWunderClient {
 
 
     /* ---------------- small helpers ---------------- */
+    private static boolean isTransient(Throwable ex) {
+        if (ex instanceof WebWunderException wwe) {
+            HttpStatus s = wwe.status;
+            if (s == HttpStatus.INTERNAL_SERVER_ERROR   // 500
+                    || s == HttpStatus.BAD_GATEWAY          // 502
+                    || s == HttpStatus.SERVICE_UNAVAILABLE  // 503
+                    || s == HttpStatus.GATEWAY_TIMEOUT) {   // 504
+                return true;
+            }
+            return wwe.getMessage()                     // SOAP fault text
+                    .toLowerCase().contains("temporär");   // “temporarily…”
+        }
+        return false;
+    }
 
     private String wrapInEnvelope(String body) {
         return """
@@ -113,8 +137,10 @@ class WebWunderClientImpl implements WebWunderClient {
 
     /** unchecked but rich with info */
     public static final class WebWunderException extends RuntimeException {
-        public WebWunderException(HttpStatus status, String body) {
+        final HttpStatus status;
+        WebWunderException(HttpStatus status, String body) {
             super("WebWunder " + status + " – body:\n" + body);
+            this.status = status;
         }
     }
 }
