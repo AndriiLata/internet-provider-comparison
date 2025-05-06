@@ -38,6 +38,10 @@ class WebWunderMapper {
 
     /* SOAP ➟ UI ------------------------------------ */
     List<OfferResponseDto> toDtos(Output output) {
+        if (output.products() == null || output.products().isEmpty()) {
+            return List.of();                    // nothing to map
+        }
+
         return output.products().stream().map(p -> {
             var info = p.productInfo();
             Integer voucherValue = null;

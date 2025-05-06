@@ -1,6 +1,7 @@
 package com.example.providercomparison.dto.provider.webwunder;
 
 import com.example.providercomparison.dto.provider.webwunder.model.LegacyGetInternetOffers;
+import com.example.providercomparison.dto.provider.webwunder.model.Ns;
 import com.example.providercomparison.dto.provider.webwunder.model.Output;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import lombok.RequiredArgsConstructor;
@@ -75,18 +76,29 @@ class WebWunderClientImpl implements WebWunderClient {
             "<(?:(\\w+):)?output[\\s>][\\s\\S]*?</(?:(\\w+):)?output>",
             Pattern.CASE_INSENSITIVE);
 
+    private static final Pattern OUTPUT_SELF_CLOSING = Pattern.compile(
+            "<(?:(\\w+):)?output(?=[\\s/>])[\\s\\S]*?/>",
+            Pattern.CASE_INSENSITIVE);
+
     private String stripEnvelope(String soapResponse) {
 
         Matcher m = OUTPUT_PATTERN.matcher(soapResponse);
-        if (!m.find()) {
-            throw new IllegalStateException("""
-            Unexpected SOAP response – cannot find <output/> element.
-            First 400 bytes were:
-            %s""".formatted(
-                    soapResponse.substring(0, Math.min(400, soapResponse.length()))
-            ));
+        if (m.find()) {
+            return m.group();                    // paired <output>…</output>
         }
-        return m.group();   // full match (group 0)
+
+        Matcher sc = OUTPUT_SELF_CLOSING.matcher(soapResponse);
+        if (sc.find()) {                         // self‑closing <output/>
+            // Normalise to lowercase + namespace so Jackson always parses
+            return "<output xmlns=\"" + Ns.URL + "\"/>";
+        }
+
+        throw new IllegalStateException("""
+        Unexpected SOAP response – cannot find <output/> element.
+        First 400 bytes were:
+        %s""".formatted(
+                soapResponse.substring(0, Math.min(400, soapResponse.length()))
+        ));
     }
 
     private Output deserialize(String xml) {

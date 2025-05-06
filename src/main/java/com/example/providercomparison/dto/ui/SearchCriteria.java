@@ -5,17 +5,14 @@ public record SearchCriteria(
         String houseNumber,
         String city,
         String postalCode,
-        boolean wantsFiber,
+        String connectionType,
         Integer maxPriceInCent,
         boolean includeTv,
         boolean includeInstallation
 ) {
     public boolean matches(OfferResponseDto dto) {
 
-        /* 1. Fibre preference ------------------------------------------------ */
-        if (wantsFiber && !"FIBER".equalsIgnoreCase(dto.connectionType())) {
-            return false;
-        }
+
 
         /* 2. Hard price ceiling (null ⇒ no limit) --------------------------- */
         if (maxPriceInCent != null && dto.monthlyCostInCent() > maxPriceInCent) {

@@ -10,33 +10,52 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 
-@Component          // gets auto‑registered in OfferServiceImpl
+@Component
 @RequiredArgsConstructor
 public class WebWunderProvider implements OfferProvider {
 
-    private final WebWunderClient client;
-    private final WebWunderMapper mapper;
+    private final WebWunderClient  client;
+    private final WebWunderMapper  mapper;
 
     @Override
     public Flux<OfferResponseDto> offers(SearchCriteria criteria) {
 
-        // decide which connectionEnums to ask WebWunder for
-        List<LegacyGetInternetOffers.ConnectionType> types =
-                criteria.wantsFiber()
-                        ? List.of(LegacyGetInternetOffers.ConnectionType.FIBER)
-                        : List.of(
+        /* Decide which connectionEnums to request */
+        List<LegacyGetInternetOffers.ConnectionType> types;
+
+        if (criteria.connectionType() == null || criteria.connectionType().isBlank()) {
+            types = List.of(
+                    LegacyGetInternetOffers.ConnectionType.DSL,
+                    LegacyGetInternetOffers.ConnectionType.CABLE,
+                    LegacyGetInternetOffers.ConnectionType.FIBER,
+                    LegacyGetInternetOffers.ConnectionType.MOBILE
+            );
+        } else {
+            try {
+                types = List.of(
+                        LegacyGetInternetOffers.ConnectionType.valueOf(
+                                criteria.connectionType().trim().toUpperCase())
+                );
+            } catch (IllegalArgumentException ex) {
+                // unknown string ⇒ ask all four so user still gets results
+                types = List.of(
                         LegacyGetInternetOffers.ConnectionType.DSL,
                         LegacyGetInternetOffers.ConnectionType.CABLE,
+                        LegacyGetInternetOffers.ConnectionType.FIBER,
                         LegacyGetInternetOffers.ConnectionType.MOBILE
                 );
-        // build a Flux for each connection type and merge them
+            }
+        }
 
+        /* Call WebWunder once per type and merge the fluxes */
         return Flux.merge(
                 types.stream().map(t ->
-                        client.fetchOffers( mapper.from(criteria, t) )
+                        client.fetchOffers(mapper.from(criteria, t))
                                 .flatMapMany(out -> Flux.fromIterable(mapper.toDtos(out)))
-                                .onErrorContinue((e,v) -> System.err.println("WebWunder "+t+" failed: "+e))
+                                .onErrorContinue((e, v) ->
+                                        System.err.println("WebWunder " + t + " failed: " + e))
                 ).toList()
         );
     }
 }
+
