@@ -35,3 +35,11 @@ build/
 application.yml
 
 application-dev.ymlbackend/target/
+
+# --- Front-end ---
+frontend/node_modules/
+frontend/dist/
+
+# --- Front-end ---
+frontend/node_modules/
+frontend/dist/
