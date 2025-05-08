@@ -12,7 +12,10 @@ public record SearchCriteria(
 ) {
     public boolean matches(OfferResponseDto dto) {
 
-
+        // 1. Check if the offer matches the connection type. ----------------- */
+        if (connectionType != null && !connectionType.equalsIgnoreCase(dto.connectionType())) {
+            return false;
+        }
 
         /* 2. Hard price ceiling (null ⇒ no limit) --------------------------- */
         if (maxPriceInCent != null && dto.monthlyCostInCent() > maxPriceInCent) {

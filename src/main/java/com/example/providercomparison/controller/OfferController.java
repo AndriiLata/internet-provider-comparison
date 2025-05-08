@@ -36,7 +36,7 @@ public class OfferController {
     public Flux<ServerSentEvent<OfferResponseDto>> streamOfferFlux(@RequestBody SearchCriteria criteria) {
 
         return Flux.merge(svc.offersFromAllProviders(criteria))
-                // .filter(criteria::matches) // your TODO
+                .filter(criteria::matches) // your TODO
                 .map(dto -> ServerSentEvent.builder(dto).build());
         // When the client closes the connection, WebFlux
         // cancels the subscription for you.
