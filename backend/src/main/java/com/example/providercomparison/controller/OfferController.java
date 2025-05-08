@@ -12,6 +12,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/offers")
 public class OfferController {
@@ -25,13 +26,7 @@ public class OfferController {
         this.svc = offerServiceReactive;
     }
 
-
-    @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamOffers(@RequestBody SearchCriteria criteria) {
-        return offerService.streamOffers(criteria);
-    }
-
-    @GetMapping(value = "/stream",
+    @PostMapping(value = "/stream",
             produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<OfferResponseDto>> streamOfferFlux(@RequestBody SearchCriteria criteria) {
 

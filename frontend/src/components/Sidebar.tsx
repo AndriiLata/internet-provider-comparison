@@ -1,4 +1,15 @@
-import { useState } from 'react';
+import { useState } from "react";
+
+
+const DEFAULT_FORM: SearchQuery = {
+  cityOrPostal: "",
+  street: "",
+  number: "",
+  connectionTypes: [],
+  maxPrice: 60,
+  includeTV: false,
+  installationService: false,
+};
 
 export interface SearchQuery {
   cityOrPostal: string;
@@ -17,19 +28,28 @@ interface Props {
 const CONNECTION_OPTIONS = ['DSL', 'FIBER', 'MOBILE', 'CABLE'];
 
 export default function Sidebar({ onSearch }: Props) {
-  const [form, setForm] = useState<SearchQuery>({
-    cityOrPostal: '',
-    street: '',
-    number: '',
-    connectionTypes: [],
-    maxPrice: 60,
-    includeTV: false,
-    installationService: false,
-  });
+    const [form, setForm] = useState<SearchQuery>(() => {
+        const saved = localStorage.getItem("lastSearch");
+        return saved ? JSON.parse(saved) : DEFAULT_FORM;
+      });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = {
+      ...form,
+      cityOrPostal: form.cityOrPostal.trim(),
+      street:       form.street.trim(),
+      number:       form.number.trim(),
+    };
+    localStorage.setItem("lastSearch", JSON.stringify(clean));   // 👈 save
+    onSearch(clean);
+  };
+  
+  
 
   const toggleConnection = (type: string) => {
     setForm((f) => {
@@ -43,10 +63,6 @@ export default function Sidebar({ onSearch }: Props) {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(form);
-  };
 
   return (
     <aside className="w-80 shrink-0 bg-base-200 p-5 flex flex-col shadow-xl">
@@ -73,13 +89,14 @@ export default function Sidebar({ onSearch }: Props) {
               className="input input-bordered flex-grow"
             />
             <input
-              name="number"
-              value={form.number}
-              onChange={handleChange}
-              type="text"
-              placeholder="Nr"
-              className="input input-bordered w-24"
+                name="number"
+                value={form.number}
+                onChange={handleChange}
+                type="number"                 // 👈 was "text"
+                placeholder="Nr"
+                className="input input-bordered w-24"
             />
+
           </div>
         </div>
 
