@@ -1,0 +1,154 @@
+import { useState } from 'react';
+
+export interface SearchQuery {
+  cityOrPostal: string;
+  street: string;
+  number: string;
+  connectionTypes: string[]; // DSL, FIBER, MOBILE, CABLE
+  maxPrice: number; // €
+  includeTV: boolean;
+  installationService: boolean;
+}
+
+interface Props {
+  onSearch: (q: SearchQuery) => void;
+}
+
+const CONNECTION_OPTIONS = ['DSL', 'FIBER', 'MOBILE', 'CABLE'];
+
+export default function Sidebar({ onSearch }: Props) {
+  const [form, setForm] = useState<SearchQuery>({
+    cityOrPostal: '',
+    street: '',
+    number: '',
+    connectionTypes: [],
+    maxPrice: 60,
+    includeTV: false,
+    installationService: false,
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  };
+
+  const toggleConnection = (type: string) => {
+    setForm((f) => {
+      const exists = f.connectionTypes.includes(type);
+      return {
+        ...f,
+        connectionTypes: exists
+          ? f.connectionTypes.filter((t) => t !== type)
+          : [...f.connectionTypes, type],
+      };
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearch(form);
+  };
+
+  return (
+    <aside className="w-80 shrink-0 bg-base-200 p-5 flex flex-col shadow-xl">
+      <h2 className="text-2xl font-semibold mb-6">Address</h2>
+
+      <form className="flex-grow flex flex-col" onSubmit={handleSubmit}>
+        <div className="space-y-5 mb-7">
+          <input
+            name="cityOrPostal"
+            value={form.cityOrPostal}
+            onChange={handleChange}
+            type="text"
+            placeholder="Postal code or City"
+            className="input input-bordered w-full"
+          />
+
+          <div className="flex gap-2">
+            <input
+              name="street"
+              value={form.street}
+              onChange={handleChange}
+              type="text"
+              placeholder="Street"
+              className="input input-bordered flex-grow"
+            />
+            <input
+              name="number"
+              value={form.number}
+              onChange={handleChange}
+              type="text"
+              placeholder="Nr"
+              className="input input-bordered w-24"
+            />
+          </div>
+        </div>
+
+        <h2 className="text-2xl font-semibold mb-6">Filters</h2>
+
+        {/* Connection type checkboxes */}
+        <div className="grid grid-cols-2 gap-3 mb-7">
+          {CONNECTION_OPTIONS.map((type) => (
+            <label key={type} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-sm checkbox-primary"
+                checked={form.connectionTypes.includes(type)}
+                onChange={() => toggleConnection(type)}
+              />
+              <span className="label-text">{type}</span>
+            </label>
+          ))}
+        </div>
+
+        {/* Max price slider */}
+        <div className="mb-7 space-y-4">
+          <label className="label">
+            <span className="label-text">Max price (€)</span>
+            <span className="label-text-alt font-semibold">{form.maxPrice}</span>
+          </label>
+          <input
+            name="maxPrice"
+            type="range"
+            min="10"
+            max="60"
+            step="1"
+            value={form.maxPrice}
+            onChange={(e) => setForm((f) => ({ ...f, maxPrice: Number(e.target.value) }))}
+            className="range range-primary"
+          />
+          <div className="w-full flex justify-between text-xs px-2 opacity-50">
+            {[10, 20, 30, 40, 50, 60].map((v) => (
+              <span key={v}>€{v}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Additional services checkboxes */}
+        <div className="grid grid-cols-1 gap-5 mb-6">
+        <label className="flex items-center gap-2 cursor-pointer">
+            <input
+            type="checkbox"
+            className="checkbox checkbox-sm checkbox-primary"
+            checked={form.includeTV}
+            onChange={() => setForm((f) => ({ ...f, includeTV: !f.includeTV }))}
+            />
+            <span className="label-text">Include TV Connection</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+            <input
+            type="checkbox"
+            className="checkbox checkbox-sm checkbox-primary"
+            checked={form.installationService}
+            onChange={() => setForm((f) => ({ ...f, installationService: !f.installationService }))}
+            />
+            <span className="label-text">Installation Service</span>
+        </label>
+        </div>
+
+        <button className="btn btn-primary mt-auto" type="submit">
+          Search
+        </button>
+      </form>
+    </aside>
+  );
+}
