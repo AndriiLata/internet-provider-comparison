@@ -44,15 +44,19 @@ class WebWunderMapper {
 
         return output.products().stream().map(p -> {
             var info = p.productInfo();
+            String connection = info.connectionType() == null ? null
+                    : info.connectionType().name();
             Integer voucherValue = null;
             String  voucherType  = null;
-            if (info.voucher() instanceof Output.PercentageVoucher pv) {
-                voucherType = "PERCENTAGE";
-                voucherValue = pv.maxDiscountInCent();
-            }
-            if (info.voucher() instanceof Output.AbsoluteVoucher av) {
-                voucherType = "ABSOLUTE";
-                voucherValue = av.discountInCent();
+            Output.Voucher v = info.voucher();
+            if (v != null) {
+                if (v.percentage() != null) {
+                    voucherType  = "PERCENTAGE";
+                    voucherValue = v.maxDiscountInCent();
+                } else if (v.discountInCent() != null) {
+                    voucherType  = "ABSOLUTE";
+                    voucherValue = v.discountInCent();
+                }
             }
             return new OfferResponseDto(
                     String.valueOf(p.productId()),
@@ -62,7 +66,7 @@ class WebWunderMapper {
                     info.monthlyCostInCentFrom25thMonth() == 0
                             ? null : info.monthlyCostInCentFrom25thMonth(),
                     info.contractDurationInMonths(),
-                    info.connectionType().name(),
+                    connection,
                     /* WebWunder has no TV flag */ false,
                     /* we already passed installation wish, include it if flag set */ true,
                     voucherValue,

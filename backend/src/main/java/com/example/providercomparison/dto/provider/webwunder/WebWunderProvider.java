@@ -35,7 +35,7 @@ public class WebWunderProvider implements OfferProvider {
                         client.fetchOffers(mapper.from(criteria, t))
                                 .doOnError(e ->
                                         log.warn("WebWunder {} failed after retries: {}", t, e.toString()))
-                                .onErrorResume(e -> Mono.empty())          // graceful fallback
+                                //.onErrorResume(e -> Mono.empty())          // graceful fallback
                                 .flatMapMany(out -> Flux.fromIterable(mapper.toDtos(out)))
                 ).toList()
         );
