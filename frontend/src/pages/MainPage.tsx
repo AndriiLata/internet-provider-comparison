@@ -80,7 +80,7 @@ function sortOffers(list: OfferResponseDto[], mode: SortMode) {
             </label>
           </div>
   
-          {loading && <LoadingBanner />}
+          {loading && <LoadingBanner offers={offers}/>}
         
   
           <ResultsList offers={displayed} />
