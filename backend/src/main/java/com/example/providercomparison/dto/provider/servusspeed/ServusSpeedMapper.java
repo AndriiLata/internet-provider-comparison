@@ -18,10 +18,6 @@ public class ServusSpeedMapper {
         var info = p.productInfo();
         var pricing = p.pricingDetails();
 
-        int costAfter24 = Optional.ofNullable(pricing)
-                .map(pr -> pr.monthlyCostInCent() - p.discount())
-                .filter(c -> c >= 0)
-                .orElse(0);
 
         boolean tvIncluded = info != null && info.tv() != null && !info.tv().isEmpty();
 
@@ -30,14 +26,14 @@ public class ServusSpeedMapper {
                 p.providerName(),
                 Optional.ofNullable(info).map(i -> i.speed()).orElse(0),
                 Optional.ofNullable(pricing).map(pr -> pr.monthlyCostInCent()).orElse(0),
-                costAfter24,
+                null,
                 Optional.ofNullable(info).map(i -> i.contractDurationInMonths()).orElse(0),
                 Optional.ofNullable(info).map(i -> i.connectionType()).orElse(""),
                 tvIncluded,
                 Optional.ofNullable(pricing).map(pr -> pr.installationService()).orElse(false),
-                p.discount(),
+                p.discount() / info.contractDurationInMonths() ,
                 "ABSOLUTE",
-                p.discount()
+                null
         );
     }
 }

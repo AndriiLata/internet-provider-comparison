@@ -52,7 +52,7 @@ class WebWunderMapper {
             if (v != null) {
                 if (v.percentage() != null) {
                     voucherType  = "PERCENTAGE";
-                    voucherValue = v.maxDiscountInCent();
+                    voucherValue = v.percentage();
                 } else if (v.discountInCent() != null) {
                     voucherType  = "ABSOLUTE";
                     voucherValue = v.discountInCent();
