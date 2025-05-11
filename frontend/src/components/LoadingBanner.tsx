@@ -43,7 +43,11 @@ export default function LoadingBanner({ offers }: Props) {
     return () => clearInterval(timer);
   }, [pending]);
 
-  const waitingFor = pending.length > 0 ? pending[idx].label : "last results";
+  const waitingFor =
+  pending.length > 0
+    ? pending[idx]?.label ?? pending[0].label
+    : "last results";
+
 
   return (
     <div className="alert shadow-lg mb-6 bg-base-200 flex items-center">
