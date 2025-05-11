@@ -1,47 +1,44 @@
-// components/PlzCityAutocomplete.tsx
+// components/StreetAutocomplete.tsx
 import { useState } from "react";
-import { usePlzSuggestions, type PlzSuggestion } from "../hooks/usePlzSuggestions";
+import { useStreetSuggestions } from "../hooks/useStreetSuggestions";
 
 interface Props {
   value: string;
   onChange: (val: string) => void;
-  /** Wird aufgerufen, wenn der Nutzer einen gültigen Vorschlag ausgewählt hat */
-  onSelect: (plz: string, city: string) => void;
+  plz: string;
+  city: string;
   className?: string;
 }
 
-export default function PlzCityAutocomplete({
+export default function StreetAutocomplete({
   value,
   onChange,
-  onSelect,
+  plz,
+  city,
   className = "",
 }: Props) {
-  const [open, setOpen]       = useState(false);
-  const [error, setError]     = useState(false);
-  const [valid, setValid]     = useState<string>("");      // letzter gültiger Wert
-  const suggs = usePlzSuggestions(value);
+  const [open, setOpen]   = useState(false);
+  const [error, setError] = useState(false);
+  const suggs             = useStreetSuggestions(value, plz, city);
 
-  /* Eingabe ändern */
+  const isValid = !value || suggs.some(s => s.street === value);
+
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(false);
     onChange(e.target.value);
     setOpen(true);
   };
 
-  /* Auswahl aus Liste */
-  const pick = (s: PlzSuggestion) => {
-    onChange(s.label);
-    setValid(s.label);
+  const pick = (street: string) => {
+    onChange(street);
     setError(false);
     setOpen(false);
-    onSelect(s.plz, s.city);
   };
 
-  /* Validierung bei Blur */
   const handleBlur = () => {
     setTimeout(() => {
       setOpen(false);
-      if (value && value !== valid) setError(true);
+      setError(!isValid);
     }, 150);
   };
 
@@ -49,28 +46,30 @@ export default function PlzCityAutocomplete({
     <div className={`relative ${className}`}>
       <input
         type="text"
-        placeholder="PLZ Stadt"
+        placeholder="Street"
         value={value}
         onChange={handleInput}
         onBlur={handleBlur}
         autoComplete="off"
-        className={`input input-bordered w-full ${error ? "input-error" : ""}`}
+        className={`input input-bordered w-full ${
+          error ? "input-error" : ""
+        }`}
       />
       {error && (
         <p className="label-text-alt text-error mt-1">
-          Bitte PLZ + Stadt aus der Liste wählen
+          Keine passende Straße für diese PLZ/Stadt
         </p>
       )}
 
       {open && suggs.length > 0 && (
         <ul className="absolute left-0 right-0 z-10 mt-1 menu bg-base-200 rounded-box shadow-lg max-h-60 overflow-y-auto">
-          {suggs.map((s) => (
+          {suggs.map(s => (
             <li
-              key={s.label}
+              key={s.street}
               className="p-2 hover:bg-primary hover:text-primary-content cursor-pointer"
-              onMouseDown={() => pick(s)}
+              onMouseDown={() => pick(s.street)}
             >
-              {s.label}
+              {s.street}
             </li>
           ))}
         </ul>

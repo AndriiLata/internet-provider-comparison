@@ -1,14 +1,20 @@
 // hooks/usePlzSuggestions.ts
 import { useEffect, useRef, useState } from "react";
 
+/** Vorschlag aus dem PLZ-/Stadt-Datensatz */
 export interface PlzSuggestion {
   label: string;   // "80331 München"
-  plz: string;     // "80331"
+  plz:   string;   // "80331"
+  city:  string;   // "München"
 }
 
 const ENDPOINT = "https://public.opendatasoft.com/api/records/1.0/search/";
 const DATASET  = "georef-germany-postleitzahl";
 
+/**
+ * Holt bis zu `limit` PLZ/Stadt-Vorschläge (Debounce 250 ms).
+ * Format des `label` ist immer "<PLZ> <Stadt>".
+ */
 export function usePlzSuggestions(query: string, limit = 5) {
   const [data, setData] = useState<PlzSuggestion[]>([]);
   const abort = useRef<AbortController | null>(null);
@@ -16,31 +22,31 @@ export function usePlzSuggestions(query: string, limit = 5) {
   useEffect(() => {
     if (!query.trim()) { setData([]); return; }
 
-    const debounce = setTimeout(() => {
+    const t = setTimeout(() => {
       abort.current?.abort();
       abort.current = new AbortController();
 
       const isNumeric = /^\d+$/.test(query);
       const q = isNumeric
-        ? `#startswith(plz_name_long,"${query}")`   // Präfix-Suche
-        : `#search(plz_name_long,"${query}")`;      // Unterstring-Suche
+        ? `#startswith(plz_name_long,"${query}")`
+        : `#search(plz_name_long,"${query}")`;
 
-      /* URLSearchParams kodiert das # korrekt zu %23  */
       const params = new URLSearchParams({
         dataset: DATASET,
         q,
-        rows: String(limit),
-        fields: "plz,plz_name_long",
+        rows:  String(limit),
+        fields: "name,plz_name_long",
       }).toString();
 
       fetch(`${ENDPOINT}?${params}`, { signal: abort.current.signal })
         .then(r => (r.ok ? r.json() : Promise.reject(r)))
         .then(json =>
           setData(
-            json.records.map((rec: any) => ({
-              label: rec.fields.plz_name_long,
-              plz:   rec.fields.plz,
-            })),
+            json.records.map((rec: any) => {
+              const label = rec.fields.plz_name_long as string;     // "80331 München"
+              const [plz, ...rest] = label.split(" ");
+              return { label, plz, city: rest.join(" ") };
+            }),
           ),
         )
         .catch(err => {
@@ -48,7 +54,7 @@ export function usePlzSuggestions(query: string, limit = 5) {
         });
     }, 250);
 
-    return () => clearTimeout(debounce);
+    return () => clearTimeout(t);
   }, [query, limit]);
 
   return data;
