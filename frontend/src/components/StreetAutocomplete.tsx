@@ -57,7 +57,7 @@ export default function StreetAutocomplete({
       />
       {error && (
         <p className="label-text-alt text-error mt-1">
-          Keine passende Straße für diese PLZ/Stadt
+          No valid street found for this postal code
         </p>
       )}
 

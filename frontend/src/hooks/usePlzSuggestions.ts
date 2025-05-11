@@ -15,7 +15,7 @@ const DATASET  = "georef-germany-postleitzahl";
  * Holt bis zu `limit` PLZ/Stadt-Vorschläge (Debounce 250 ms).
  * Format des `label` ist immer "<PLZ> <Stadt>".
  */
-export function usePlzSuggestions(query: string, limit = 5) {
+export function usePlzSuggestions(query: string, limit = 6) {
   const [data, setData] = useState<PlzSuggestion[]>([]);
   const abort = useRef<AbortController | null>(null);
 

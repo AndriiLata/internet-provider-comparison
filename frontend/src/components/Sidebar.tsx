@@ -118,7 +118,7 @@ export default function Sidebar({ onSearch }: Props) {
           </div>
           {!validNumber && (
             <p className="label-text-alt text-error -mt-3">
-              Hausnummer erforderlich
+                Please enter a valid house number
             </p>
           )}
         </div>

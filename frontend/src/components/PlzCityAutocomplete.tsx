@@ -58,7 +58,7 @@ export default function PlzCityAutocomplete({
       />
       {error && (
         <p className="label-text-alt text-error mt-1">
-          Bitte PLZ + Stadt aus der Liste wählen
+          Please enter a valid postal code and city
         </p>
       )}
 
