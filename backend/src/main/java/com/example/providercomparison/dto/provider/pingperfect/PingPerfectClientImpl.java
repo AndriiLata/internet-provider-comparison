@@ -11,6 +11,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
+import java.util.Collections;
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class PingPerfectClientImpl implements PingPerfectClient {
@@ -29,7 +32,11 @@ public class PingPerfectClientImpl implements PingPerfectClient {
                 c.postalCode(),
                 c.houseNumber(),
                 c.city(),
-                "FIBER".equalsIgnoreCase(c.connectionType())
+                Optional.ofNullable(c.connectionTypes())
+                        .orElse(Collections.emptyList())
+                        .stream()
+                        .anyMatch(type -> type.equalsIgnoreCase("FIBER"))
+
         );
 
         String json = toJson(body);

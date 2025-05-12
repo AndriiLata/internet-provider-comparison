@@ -98,7 +98,7 @@ class WebWunderClientImpl implements WebWunderClient {
 
         throw new IllegalStateException("""
         Unexpected SOAP response – cannot find <output/> element.
-        First 400 bytes were:
+        First 400bytes were:
         %s""".formatted(
                 soapResponse.substring(0, Math.min(400, soapResponse.length()))
         ));
