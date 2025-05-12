@@ -1,4 +1,3 @@
-// components/StreetAutocomplete.tsx
 import { useState } from "react";
 import { useStreetSuggestions } from "../hooks/useStreetSuggestions";
 
@@ -38,7 +37,15 @@ export default function StreetAutocomplete({
   const handleBlur = () => {
     setTimeout(() => {
       setOpen(false);
-      setError(!isValid);
+
+      if (!value) { setError(false); return; }
+
+      // If suggestions are empty (e.g. first render) we trust cached value.
+      if (isValid || suggs.length === 0) {
+        setError(false);
+      } else {
+        setError(true);
+      }
     }, 150);
   };
 
@@ -55,6 +62,7 @@ export default function StreetAutocomplete({
           error ? "input-error" : ""
         }`}
       />
+
       {error && (
         <p className="label-text-alt text-error mt-1">
           No valid street found for this postal code
@@ -63,7 +71,7 @@ export default function StreetAutocomplete({
 
       {open && suggs.length > 0 && (
         <ul className="absolute left-0 right-0 z-10 mt-1 menu bg-base-200 rounded-box shadow-lg max-h-60 overflow-y-auto">
-          {suggs.map(s => (
+          {suggs.map((s) => (
             <li
               key={s.street}
               className="p-2 hover:bg-primary hover:text-primary-content cursor-pointer"

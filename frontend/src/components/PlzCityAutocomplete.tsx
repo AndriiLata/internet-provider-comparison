@@ -1,11 +1,13 @@
-// components/PlzCityAutocomplete.tsx
 import { useState } from "react";
-import { usePlzSuggestions, type PlzSuggestion } from "../hooks/usePlzSuggestions";
+import {
+  usePlzSuggestions,
+  type PlzSuggestion,
+} from "../hooks/usePlzSuggestions";
 
 interface Props {
   value: string;
   onChange: (val: string) => void;
-  /** Wird aufgerufen, wenn der Nutzer einen gültigen Vorschlag ausgewählt hat */
+  /** fires when user picks a suggestion */
   onSelect: (plz: string, city: string) => void;
   className?: string;
 }
@@ -16,19 +18,22 @@ export default function PlzCityAutocomplete({
   onSelect,
   className = "",
 }: Props) {
-  const [open, setOpen]       = useState(false);
-  const [error, setError]     = useState(false);
-  const [valid, setValid]     = useState<string>("");      // letzter gültiger Wert
+  const [open, setOpen]   = useState(false);
+  const [error, setError] = useState(false);
+
+  /** last value we accepted as definitely valid */
+  const [valid, setValid] = useState<string>(value); // <- accept cached value
+
   const suggs = usePlzSuggestions(value);
 
-  /* Eingabe ändern */
+  /* user typing */
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(false);
     onChange(e.target.value);
     setOpen(true);
   };
 
-  /* Auswahl aus Liste */
+  /* user picks from list */
   const pick = (s: PlzSuggestion) => {
     onChange(s.label);
     setValid(s.label);
@@ -37,25 +42,34 @@ export default function PlzCityAutocomplete({
     onSelect(s.plz, s.city);
   };
 
-  /* Validierung bei Blur */
+  /* on blur: verify value */
   const handleBlur = () => {
     setTimeout(() => {
       setOpen(false);
-      if (value && value !== valid) setError(true);
-    }, 150);
+      if (!value) { setError(false); return; }
+
+      // treat as valid if equal to the last accepted OR appears in suggestions
+      if (value === valid || suggs.some(s => s.label === value)) {
+        setValid(value);
+        setError(false);
+      } else {
+        setError(true);
+      }
+    }, 150); // wait for click in list
   };
 
   return (
     <div className={`relative ${className}`}>
       <input
         type="text"
-        placeholder="PLZ Stadt"
+        placeholder="Enter postal code and city"
         value={value}
         onChange={handleInput}
         onBlur={handleBlur}
         autoComplete="off"
         className={`input input-bordered w-full ${error ? "input-error" : ""}`}
       />
+
       {error && (
         <p className="label-text-alt text-error mt-1">
           Please enter a valid postal code and city

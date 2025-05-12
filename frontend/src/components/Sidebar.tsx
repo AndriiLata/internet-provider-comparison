@@ -1,10 +1,10 @@
-// components/Sidebar.tsx
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import PlzCityAutocomplete from "./PlzCityAutocomplete";
 import StreetAutocomplete from "./StreetAutocomplete";
 import { usePlzSuggestions } from "../hooks/usePlzSuggestions";
 import { useStreetSuggestions } from "../hooks/useStreetSuggestions";
 
+/* ---------- types ---------- */
 export interface SearchQuery {
   cityOrPostal: string;
   street: string;
@@ -29,35 +29,45 @@ interface Props { onSearch: (q: SearchQuery) => void; }
 
 const CONNECTION_OPTIONS = ["DSL", "FIBER", "MOBILE", "CABLE"];
 
+/* ---------- component ---------- */
 export default function Sidebar({ onSearch }: Props) {
   const [form, setForm] = useState<SearchQuery>(() => {
     const saved = localStorage.getItem("lastSearch");
     return saved ? JSON.parse(saved) : DEFAULT_FORM;
   });
 
-  /* gültige PLZ + Stadt, die vom Autocomplete bestätigt wurden */
-  const [plz,  setPlz]  = useState("");
-  const [city, setCity] = useState("");
+  const cached =
+    (JSON.parse(localStorage.getItem("lastSearch") || "null") as
+      | SearchQuery
+      | null) ?? null;
 
-  /* Suggestion-Listen zum Validieren */
+  /* extract PLZ + city from cached label */
+  const parsed = form.cityOrPostal.match(/^\\s*(\\d{4,5})\\s+(.+?)\\s*$/);
+  const [plz,  setPlz]  = useState(parsed ? parsed[1] : "");
+  const [city, setCity] = useState(parsed ? parsed[2] : "");
+
   const plzCitySugg = usePlzSuggestions(form.cityOrPostal);
   const streetSugg  = useStreetSuggestions(form.street, plz, city);
 
-  /* Einzel-Validierungen -------------------------------------------------- */
-  const validPlzCityData   = plzCitySugg.some(s => s.label === form.cityOrPostal);
-  const validPlzCity       = form.cityOrPostal.trim() !== "" && validPlzCityData;
+  const validPlzCity = useMemo(() => {
+    if (!form.cityOrPostal.trim()) return false;
+    if (plzCitySugg.some(s => s.label === form.cityOrPostal)) return true;
+    return cached?.cityOrPostal === form.cityOrPostal;
+  }, [form.cityOrPostal, plzCitySugg, cached]);
 
-  const validStreetData    = streetSugg.some(s => s.street === form.street);
-  const validStreet        = form.street.trim()      !== "" && validStreetData;
+  const validStreet = useMemo(() => {
+    if (!form.street.trim()) return false;
+    if (streetSugg.some(s => s.street === form.street)) return true;
+    return cached?.street === form.street;
+  }, [form.street, streetSugg, cached]);
 
-  const validNumber        = form.number.trim()      !== "";
-  /* Gesamte Formular-Gültigkeit */
-  const formValid          = validPlzCity && validStreet && validNumber;
+  const validNumber = form.number.trim() !== "";
+  const formValid   = validPlzCity && validStreet && validNumber;
 
-  /* ---------------------------------------------------------------------- */
+  /* submit */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formValid) return;               // Blockt Enter-Submit bei Fehlern
+    if (!formValid) return;
 
     const clean: SearchQuery = {
       ...form,
@@ -81,21 +91,19 @@ export default function Sidebar({ onSearch }: Props) {
     });
   };
 
-  /* ---------------------------------------------------------------------- */
+  /* render */
   return (
     <aside className="w-80 shrink-0 bg-base-200 p-5 flex flex-col shadow-xl">
       <h2 className="text-2xl font-semibold mb-6">Address</h2>
 
       <form className="flex-grow flex flex-col" onSubmit={handleSubmit}>
         <div className="space-y-5 mb-7">
-          {/* PLZ + Stadt ---------------------------------------------------- */}
           <PlzCityAutocomplete
             value={form.cityOrPostal}
             onChange={v => setForm(f => ({ ...f, cityOrPostal: v }))}
             onSelect={(p, c) => { setPlz(p); setCity(c); }}
           />
 
-          {/* Straße + Hausnummer ------------------------------------------ */}
           <div className="flex gap-2">
             <StreetAutocomplete
               className="flex-grow"
@@ -111,19 +119,18 @@ export default function Sidebar({ onSearch }: Props) {
               onChange={e => setForm(f => ({ ...f, number: e.target.value }))}
               type="number"
               placeholder="Nr"
-              className={`input input-bordered w-24 ${
-                !validNumber ? "input-error" : ""
-              }`}
+              className={`input input-bordered w-24 ${!validNumber ? "input-error" : ""}`}
             />
           </div>
+
           {!validNumber && (
             <p className="label-text-alt text-error -mt-3">
-                Please enter a valid house number
+              Please enter a valid house number
             </p>
           )}
         </div>
 
-        {/* ----------------------- FILTERS ----------------------- */}
+        {/* filters */}
         <h2 className="text-2xl font-semibold mb-6">Filters</h2>
 
         <div className="grid grid-cols-2 gap-3 mb-7">
@@ -140,13 +147,11 @@ export default function Sidebar({ onSearch }: Props) {
           ))}
         </div>
 
-        {/* Max-Price-Slider (unverändert) */}
+        {/* max-price slider */}
         <div className="mb-7 space-y-4">
           <label className="label">
             <span className="label-text">Max price (€)</span>
-            <span className="label-text-alt font-semibold">
-              {form.maxPrice}
-            </span>
+            <span className="label-text-alt font-semibold">{form.maxPrice}</span>
           </label>
           <input
             name="maxPrice"
@@ -193,7 +198,6 @@ export default function Sidebar({ onSearch }: Props) {
           </label>
         </div>
 
-        {/* ----------------------- SUBMIT ----------------------- */}
         <button
           className="btn btn-primary mt-auto"
           type="submit"
