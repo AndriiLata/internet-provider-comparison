@@ -18,7 +18,7 @@ export interface OfferResponseDto {
     houseNumber: number;          // 👈 changed
     city: string;
     postalCode: string;
-    connectionType: string | null;
+    connectionTypes: string[] | null;
     maxPriceInCent: number | null;
     includeTv: boolean;
     includeInstallation: boolean;
@@ -55,13 +55,13 @@ export interface OfferResponseDto {
   
     return {
       street: q.street.trim(),
-      houseNumber: parseInt(q.number.trim(), 10) || 0,   // 👈 integer!
+      houseNumber: parseInt(q.number.trim(), 10) || 0,
       city,
       postalCode,
-      connectionType:
-        q.connectionTypes.length === 1 ? q.connectionTypes[0] : null,
+      connectionTypes: q.connectionTypes,          // ✅ send full list
       maxPriceInCent: q.maxPrice ? q.maxPrice * 100 : null,
       includeTv: q.includeTV,
       includeInstallation: q.installationService,
     };
   }
+  

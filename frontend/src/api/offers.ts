@@ -1,40 +1,10 @@
-import type { SearchQuery } from "../components/Sidebar";
+
 import type { OfferResponseDto, SearchCriteria } from "../types/offer";
 
 export interface OfferStream {
   cancel: () => void;
 }
 
-function splitCityPostal(raw: string): { city: string; postalCode: string } {
-    const trimmed = raw.trim();
-    const m = trimmed.match(/(\d{5})/);          // look for a 5-digit number
-    if (!m) return { city: trimmed, postalCode: "" };
-  
-    const postal = m[1];
-    const city = trimmed
-      .replace(postal, "")
-      .replace(/[,\s]+$/, "")                     // kill trailing space/comma
-      .replace(/^\s+/, "")                       // kill leading space
-      .trim();
-  
-    return { city, postalCode: postal };
-  }
-  
-  export function toCriteria(q: SearchQuery): SearchCriteria {
-    const { city, postalCode } = splitCityPostal(q.cityOrPostal);
-  
-    return {
-      street: q.street.trim(),
-      houseNumber: parseInt(q.number.trim(), 10) || 0,   // 👈 integer!
-      city,
-      postalCode,
-      connectionType:
-        q.connectionTypes.length === 1 ? q.connectionTypes[0] : null,
-      maxPriceInCent: q.maxPrice ? q.maxPrice * 100 : null,
-      includeTv: q.includeTV,
-      includeInstallation: q.installationService,
-    };
-  }
 
 /**
  * Starts a POST /api/offers/stream request and calls the supplied callbacks
