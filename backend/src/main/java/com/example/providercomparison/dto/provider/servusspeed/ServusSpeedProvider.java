@@ -21,7 +21,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class ServusSpeedProvider {
+public class ServusSpeedProvider implements OfferProvider {
 
     private final ServusSpeedClient client;
 
@@ -54,7 +54,7 @@ public class ServusSpeedProvider {
     @Value("${provider.servusspeed.timeout-sec:45}") private long timeoutSec;
 
     /* ================================================================ */
-   // @Override
+    @Override
     public Flux<OfferResponseDto> offers(SearchCriteria criteria) {
 
         return productsForAddress(criteria)               // Mono<List<String>>

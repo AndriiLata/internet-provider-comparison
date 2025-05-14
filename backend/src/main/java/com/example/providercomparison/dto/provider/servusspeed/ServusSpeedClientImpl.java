@@ -50,7 +50,7 @@ public class ServusSpeedClientImpl implements ServusSpeedClient {
                     // availableProducts() is List<?>, convert to List<String>
                     return resp.availableProducts().stream()
                             .map(Object::toString)             // or p -> p.id()
-                            .toList();                          // Java 16+ collector
+                            .toList();                          // Java16+ collector
                 })
                 .defaultIfEmpty(Collections.<String>emptyList());  // ⇠ same here
     }

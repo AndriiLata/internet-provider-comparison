@@ -72,7 +72,7 @@ public class ServusSpeedMapper {
                 monthlyCost,    // monthlyCostInCent
                 null,
                 monthlyDiscountValue,
-                0,
+                null,
                 installation
         );
 

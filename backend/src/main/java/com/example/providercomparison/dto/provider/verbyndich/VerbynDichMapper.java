@@ -1,3 +1,4 @@
+// src/main/java/com/example/providercomparison/dto/provider/verbyndich/VerbynDichMapper.java
 package com.example.providercomparison.dto.provider.verbyndich;
 
 import com.example.providercomparison.dto.provider.verbyndich.model.VerbynDichResponse;
@@ -30,64 +31,63 @@ public final class VerbynDichMapper {
     private static final Pattern CONNECTION_PATTERN =
             Pattern.compile("erhalten\\s+Sie\\s+eine\\s+(Cable|Fiber|DSL)-Verbindung", FLAGS);
 
-    private static final Pattern TV_PATTERN =
-            Pattern.compile("(Fernsehsender\\s+enthalten|RobynTV\\+|TV\\+)", FLAGS);
+    // new: extract "<Brand>" after the exact phrase
+    private static final Pattern TV_BRAND_PATTERN =
+            Pattern.compile(
+                    "Zusätzlich\\s+sind\\s+folgende\\s+Fernsehsender\\s+enthalten\\s+([^\\.\\n]+)",
+                    FLAGS
+            );
+
+    // new: extract "250" from "Ab 250GB pro Monat wird die Geschwindigkeit gedrosselt"
+    private static final Pattern DATA_CAP_PATTERN =
+            Pattern.compile(
+                    "Ab\\s+(\\d{1,4})GB\\s+pro\\s+Monat\\s+wird\\s+die\\s+Geschwindigkeit\\s+gedrosselt",
+                    FLAGS
+            );
 
     private VerbynDichMapper() {}
 
     public static OfferResponseDto toDto(VerbynDichResponse resp) {
         String desc = resp.description();
 
-        // parse raw numbers
-        int price       = parseInt(find(PRICE_PATTERN, desc));
-        int after24     = parseInt(find(PRICE_AFTER24_PATTERN, desc));
-        int speed       = parseInt(find(SPEED_PATTERN, desc));
-        int duration    = parseInt(find(DURATION_PATTERN, desc));
-        if (after24 == 0) after24 = price;  // if no 24-month price, assume flat
+        // ── 1) parse basic numbers ─────────────────────
+        int price    = parseInt(find(PRICE_PATTERN, desc));
+        int after24  = parseInt(find(PRICE_AFTER24_PATTERN, desc));
+        int speed    = parseInt(find(SPEED_PATTERN, desc));
+        int duration = parseInt(find(DURATION_PATTERN, desc));
+        if (after24 == 0) after24 = price;
 
-        // product/meta
+        // ── 2) extract data-cap limit (speedLimitFrom) ──
+        Integer dataCapLimit = parseIntNull(find(DATA_CAP_PATTERN, desc));
+        // if not found, leave as 0
+
+        // ── 3) extract TV brand ────────────────────────
+        Matcher tvMatcher = TV_BRAND_PATTERN.matcher(desc);
+        boolean tvIncluded = tvMatcher.find();
+        String tvBrand = tvIncluded
+                ? tvMatcher.group(1).trim()
+                : null;
+
+        // ── 4) build IDs & meta ────────────────────────
         String productId = "verbyndich" + COUNTER.incrementAndGet();
         String provider  = resp.product();
 
-        // connection
-        String connection = find(CONNECTION_PATTERN, desc).toUpperCase();
-        if (connection.isBlank()) connection = "UNKNOWN";
-
-        // TV
-        Matcher tvM = TV_PATTERN.matcher(desc);
-        boolean tvIncluded = false;
-        String tvBrand = "";
-        if (tvM.find()) {
-            tvIncluded = true;
-            String match = tvM.group(1);
-            // only treat actual brand tags as brand
-            if (match.equalsIgnoreCase("RobynTV+") || match.equalsIgnoreCase("TV+")) {
-                tvBrand = match;
-            }
-        }
-
-        // cost info (all in cents)
-        int discountedMonthlyCost = price * 100; // (since there is no discount)
-        int nominalMonthlyCost     = price * 100;
-        Integer costAfter24        = after24 * 100;
-
-
-        // build nested DTOs
+        // ── 5) nested DTOs ─────────────────────────────
         OfferResponseDto.ContractInfo contract = new OfferResponseDto.ContractInfo(
-                connection,               // connectionType
-                speed,                    // speed (mbps)
-                speed,                    // speedLimitFrom (fixed)
-                duration,                 // contractDurationInMonths
-                0                         // maxAge (not used)
+                find(CONNECTION_PATTERN, desc).toUpperCase(),
+                speed,
+                dataCapLimit,
+                duration,
+                null        // maxAge not used here
         );
 
         OfferResponseDto.CostInfo cost = new OfferResponseDto.CostInfo(
-                discountedMonthlyCost,    // discountedMonthlyCostInCent
-                nominalMonthlyCost,       // monthlyCostInCent (regular)
-                costAfter24,              // monthlyCostAfter24mInCent
-                null,     // monthlyDiscountValueInCent
-                0,              // maxDiscountInCent
-                false           // installationService
+                price * 100,
+                price * 100,
+                after24 * 100,
+                null,
+                null,
+                false
         );
 
         OfferResponseDto.TvInfo tv = new OfferResponseDto.TvInfo(
@@ -104,8 +104,7 @@ public final class VerbynDichMapper {
         );
     }
 
-    /* ───────────────────── helpers ───────────────────── */
-
+    /* ──── helpers ───────────────────────────────── */
     private static String find(Pattern p, String text) {
         Matcher m = p.matcher(text);
         return m.find() ? m.group(1) : "";
@@ -117,6 +116,15 @@ public final class VerbynDichMapper {
             return Integer.parseInt(s.replace(".", ""));
         } catch (NumberFormatException e) {
             return 0;
+        }
+    }
+
+    private static Integer parseIntNull(String s) {
+        if (s == null || s.isBlank()) return null;
+        try {
+            return Integer.parseInt(s.replace(".", ""));
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 }

@@ -47,9 +47,9 @@ class WebWunderMapper {
                     OfferResponseDto.ContractInfo contract = new OfferResponseDto.ContractInfo(
                             connection,
                             info.speed(),       // speed (mbps)
-                            info.speed(),       // speedLimitFrom
+                            null,       // speedLimitFrom
                             info.contractDurationInMonths(),
-                            0                   // maxAge (not used)
+                            null                   // maxAge (not used)
                     );
 
                     // --- Base costs ---

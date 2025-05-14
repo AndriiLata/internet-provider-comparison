@@ -15,13 +15,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 @RequiredArgsConstructor
-public class VerbynDichProvider  {
+public class VerbynDichProvider implements OfferProvider {
 
     private static final Logger log = LoggerFactory.getLogger(VerbynDichProvider.class);
     private final VerbynDichClient client;
     private static final int MAX_PARALLEL_REQUESTS = 8;
 
-   // @Override
+    @Override
     public Flux<OfferResponseDto> offers(SearchCriteria criteria) {
         AtomicBoolean stop = new AtomicBoolean(false);
 
