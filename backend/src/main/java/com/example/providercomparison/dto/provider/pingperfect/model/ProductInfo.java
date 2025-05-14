@@ -4,7 +4,9 @@ public record ProductInfo(
         int speed,
         int contractDurationInMonths,
         ConnectionType connectionType,
-        String tv                      // "INCLUDED" | "NONE" …
+        String tv,                     // "INCLUDED" | "NONE" …
+        Integer limitFrom,
+        Integer maxAge
 ) {
     public enum ConnectionType { DSL, CABLE, FIBER, MOBILE }
 }

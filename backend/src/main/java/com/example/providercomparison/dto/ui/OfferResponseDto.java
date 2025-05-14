@@ -3,15 +3,34 @@ package com.example.providercomparison.dto.ui;
 public record OfferResponseDto(
         String productId,
         String provider,
-        int speed,               // mbps
-        int monthlyCostInCent,
-        Integer monthlyCostAfter24mInCent,
-        int durationInMonths,
-        String connectionType,   // "DSL" …
-        boolean tvIncluded,
-        boolean installationService,
-        Integer voucherValueInCent,      // expose absolute value only
-        String voucherType,              // "ABSOLUTE" or "PERCENTAGE"
-        Integer discountInCent           // ServusSpeed
+        ContractInfo contractInfo,
+        CostInfo costInfo,
+        TvInfo tvInfo
+                     // "ABSOLUTE" or "PERCENTAGE"
+        // Verbyndich:  FernseherAngebot "RobynTV+"
+        // ServusSpeed: FernseherAngebot, limitFrom, maxAge
+        // WebWunder: maxDiscountInCent
+        // ByteMe: FernseherAngebot, limitFrom, maxAge
+        // PingPerfect: FernseherAngebot, limitFrom, maxAge
 ) {
+    public static record CostInfo(
+            int discountedMonthlyCostInCent,
+            int monthlyCostInCent,
+            Integer monthlyCostAfter24mInCent,
+            Integer monthlyDiscountValueInCent,
+            Integer maxDiscountInCent,
+            boolean installationService
+    ){}
+    public static record TvInfo(
+            boolean tvIncluded,
+            String tvBrand
+    ){}
+    public static record ContractInfo(
+            String connectionType,
+            int speed, // mbps
+            Integer speedLimitFrom,// mbps
+            Integer contractDurationInMonths,
+            Integer maxAge
+    ){}
+
 }

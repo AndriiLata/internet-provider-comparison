@@ -14,20 +14,31 @@ public record SearchCriteria(
         boolean includeInstallation) {
 
     public boolean matches(OfferResponseDto dto) {
-
         /* 1. Connection type filter (skip if none sent) */
         if (connectionTypes != null && !connectionTypes.isEmpty()
                 && connectionTypes.stream()
-                .noneMatch(t -> t.equalsIgnoreCase(dto.connectionType()))) {
+                .noneMatch(t -> t.equalsIgnoreCase(dto.contractInfo().connectionType()))) {
             return false;
         }
 
-        /* 2-4 unchanged … */
-        if (maxPriceInCent != null && dto.monthlyCostInCent() > maxPriceInCent) return false;
-        if (includeTv && !dto.tvIncluded()) return false;
-        if (includeInstallation && !dto.installationService()) return false;
+        /* 2. Max price (uses the nested CostInfo) */
+        if (maxPriceInCent != null
+                && dto.costInfo().discountedMonthlyCostInCent() > maxPriceInCent) {
+            return false;
+        }
+
+        /* 3. TV inclusion (uses the nested TvInfo) */
+        if (includeTv && !dto.tvInfo().tvIncluded()) {
+            return false;
+        }
+
+        /* 4. Installation service (uses the nested CostInfo) */
+        if (includeInstallation && !dto.costInfo().installationService()) {
+            return false;
+        }
 
         return true;
     }
+
 }
 

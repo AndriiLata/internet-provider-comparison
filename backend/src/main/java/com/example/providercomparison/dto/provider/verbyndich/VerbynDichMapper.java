@@ -12,7 +12,7 @@ public final class VerbynDichMapper {
     /* ─────────── 1. unique product ids ─────────── */
     private static final AtomicLong COUNTER = new AtomicLong();
 
-    /* ─────────── 2. patterns (unchanged from previous version) ─────────── */
+    /* ─────────── 2. patterns ─────────── */
     private static final int FLAGS = Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
 
     private static final Pattern PRICE_PATTERN =
@@ -33,41 +33,74 @@ public final class VerbynDichMapper {
     private static final Pattern TV_PATTERN =
             Pattern.compile("(Fernsehsender\\s+enthalten|RobynTV\\+|TV\\+)", FLAGS);
 
-    /* ────────────────────────────────────────────────────────────────────── */
+    private VerbynDichMapper() {}
 
     public static OfferResponseDto toDto(VerbynDichResponse resp) {
         String desc = resp.description();
 
-        int price     = parseInt(find(PRICE_PATTERN,        desc));
-        int speed     = parseInt(find(SPEED_PATTERN,        desc));
-        int duration  = parseInt(find(DURATION_PATTERN,     desc));
-        int after24   = parseInt(find(PRICE_AFTER24_PATTERN, desc));
+        // parse raw numbers
+        int price       = parseInt(find(PRICE_PATTERN, desc));
+        int after24     = parseInt(find(PRICE_AFTER24_PATTERN, desc));
+        int speed       = parseInt(find(SPEED_PATTERN, desc));
+        int duration    = parseInt(find(DURATION_PATTERN, desc));
+        if (after24 == 0) after24 = price;  // if no 24-month price, assume flat
 
-        if (after24 == 0) after24 = price;           // same price if clause missing
+        // product/meta
+        String productId = "verbyndich" + COUNTER.incrementAndGet();
+        String provider  = resp.product();
 
+        // connection
         String connection = find(CONNECTION_PATTERN, desc).toUpperCase();
         if (connection.isBlank()) connection = "UNKNOWN";
 
-        boolean tvIncluded = TV_PATTERN.matcher(desc).find();
+        // TV
+        Matcher tvM = TV_PATTERN.matcher(desc);
+        boolean tvIncluded = false;
+        String tvBrand = "";
+        if (tvM.find()) {
+            tvIncluded = true;
+            String match = tvM.group(1);
+            // only treat actual brand tags as brand
+            if (match.equalsIgnoreCase("RobynTV+") || match.equalsIgnoreCase("TV+")) {
+                tvBrand = match;
+            }
+        }
 
-        /* --------- CHANGES HERE --------- */
-        String productId = "verbyndich" + COUNTER.incrementAndGet();  // unique id
-        String provider  = resp.product();                            // provider field
-        /* -------------------------------- */
+        // cost info (all in cents)
+        int discountedMonthlyCost = price * 100; // (since there is no discount)
+        int nominalMonthlyCost     = price * 100;
+        Integer costAfter24        = after24 * 100;
+
+
+        // build nested DTOs
+        OfferResponseDto.ContractInfo contract = new OfferResponseDto.ContractInfo(
+                connection,               // connectionType
+                speed,                    // speed (mbps)
+                speed,                    // speedLimitFrom (fixed)
+                duration,                 // contractDurationInMonths
+                0                         // maxAge (not used)
+        );
+
+        OfferResponseDto.CostInfo cost = new OfferResponseDto.CostInfo(
+                discountedMonthlyCost,    // discountedMonthlyCostInCent
+                nominalMonthlyCost,       // monthlyCostInCent (regular)
+                costAfter24,              // monthlyCostAfter24mInCent
+                null,     // monthlyDiscountValueInCent
+                0,              // maxDiscountInCent
+                false           // installationService
+        );
+
+        OfferResponseDto.TvInfo tv = new OfferResponseDto.TvInfo(
+                tvIncluded,
+                tvBrand
+        );
 
         return new OfferResponseDto(
                 productId,
                 provider,
-                speed,
-                price   * 100,
-                after24 * 100,
-                duration,
-                connection,
-                tvIncluded,
-                false,   // installationService
-                null,
-                null,
-                null
+                contract,
+                cost,
+                tv
         );
     }
 
@@ -80,9 +113,10 @@ public final class VerbynDichMapper {
 
     private static int parseInt(String s) {
         if (s == null || s.isBlank()) return 0;
-        try { return Integer.parseInt(s.replace(".", "")); }
-        catch (NumberFormatException e) { return 0; }
+        try {
+            return Integer.parseInt(s.replace(".", ""));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
-
-    private VerbynDichMapper() {}
 }

@@ -16,14 +16,14 @@ import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
-public class WebWunderProvider implements OfferProvider {
+public class WebWunderProvider {
 
     private static final Logger log = LoggerFactory.getLogger(WebWunderProvider.class);
 
     private final WebWunderClient client;
     private final WebWunderMapper mapper;
 
-    @Override
+   // @Override
     public Flux<OfferResponseDto> offers(SearchCriteria criteria) {
 
         /* 1 ─ decide which connectionEnums to request */

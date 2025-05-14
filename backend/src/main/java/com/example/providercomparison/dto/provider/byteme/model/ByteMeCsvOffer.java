@@ -9,7 +9,7 @@ public record ByteMeCsvOffer(
         int    durationInMonths,
         String connectionType,
         boolean installationService,
-        boolean tvIncluded,
+        String tvBrand,
         Integer limitFrom,
         Integer maxAge,
         String  voucherType,

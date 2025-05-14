@@ -12,19 +12,13 @@ import java.util.stream.Collectors;
 @Component
 class WebWunderMapper {
 
-    /* UI ➟ SOAP ------------------------------------ */
+    /* UI ➟ SOAP (unchanged) */
     LegacyGetInternetOffers from(SearchCriteria c,
                                  LegacyGetInternetOffers.ConnectionType connection) {
-
         return new LegacyGetInternetOffers(
                 new LegacyGetInternetOffers.Input(
-                        /* installation flag */
                         c.includeInstallation(),
-
-                        /* the connectionEnum we pass in */
                         connection,
-
-                        /* address */
                         new LegacyGetInternetOffers.Input.Address(
                                 c.street(),
                                 c.houseNumber(),
@@ -36,43 +30,93 @@ class WebWunderMapper {
         );
     }
 
-    /* SOAP ➟ UI ------------------------------------ */
+    /* SOAP ➟ UI (nested DTO, with maxDiscountInCent) */
     List<OfferResponseDto> toDtos(Output output) {
         if (output.products() == null || output.products().isEmpty()) {
-            return List.of();                    // nothing to map
+            return List.of();
         }
 
-        return output.products().stream().map(p -> {
-            var info = p.productInfo();
-            String connection = info.connectionType() == null ? null
-                    : info.connectionType().name();
-            Integer voucherValue = null;
-            String  voucherType  = null;
-            Output.Voucher v = info.voucher();
-            if (v != null) {
-                if (v.percentage() != null) {
-                    voucherType  = "PERCENTAGE";
-                    voucherValue = v.percentage();
-                } else if (v.discountInCent() != null) {
-                    voucherType  = "ABSOLUTE";
-                    voucherValue = v.discountInCent();
-                }
-            }
-            return new OfferResponseDto(
-                    String.valueOf(p.productId()),
-                    p.providerName(),
-                    info.speed(),
-                    info.monthlyCostInCent(),
-                    info.monthlyCostInCentFrom25thMonth() == 0
-                            ? null : info.monthlyCostInCentFrom25thMonth(),
-                    info.contractDurationInMonths(),
-                    connection,
-                    /* WebWunder has no TV flag */ false,
-                    /* we already passed installation wish, include it if flag set */ true,
-                    voucherValue,
-                    voucherType,
-                    null               // discountInCent – not supplied by WebWunder
-            );
-        }).collect(Collectors.toList());
+        return output.products().stream()
+                .map(p -> {
+                    var info = p.productInfo();
+
+                    // --- ContractInfo ---
+                    String connection = info.connectionType() == null
+                            ? "UNKNOWN"
+                            : info.connectionType().name();
+                    OfferResponseDto.ContractInfo contract = new OfferResponseDto.ContractInfo(
+                            connection,
+                            info.speed(),       // speed (mbps)
+                            info.speed(),       // speedLimitFrom
+                            info.contractDurationInMonths(),
+                            0                   // maxAge (not used)
+                    );
+
+                    // --- Base costs ---
+                    int monthlyCost = info.monthlyCostInCent();
+                    Integer monthlyCostAfter24 = info.monthlyCostInCentFrom25thMonth() == 0
+                            ? null
+                            : info.monthlyCostInCentFrom25thMonth();
+
+                    // --- Voucher parsing ---
+                    Output.Voucher v = info.voucher();
+                    String voucherType   = null;
+                    Integer rawVoucher   = null;
+                    int computedDiscount = 0;
+                    int declaredMaxDiscount = 0;
+
+                    if (v != null) {
+                        // declared maximum discount cap
+                        if (v.maxDiscountInCent() != null) {
+                            declaredMaxDiscount = v.maxDiscountInCent();
+                        }
+
+                        if (v.percentage() != null) {
+                            voucherType     = "PERCENTAGE";
+                            rawVoucher      = v.percentage();
+                            // compute absolute discount from percentage
+                            computedDiscount = monthlyCost * rawVoucher / 100;
+                        } else if (v.discountInCent() != null) {
+                            voucherType     = "ABSOLUTE";
+                            rawVoucher      = v.discountInCent();
+                            computedDiscount = rawVoucher;
+                        }
+                    }
+
+                    // choose the true discount: respect the provider’s cap if present
+                    int discountInCent = declaredMaxDiscount > 0
+                            ? Math.min(computedDiscount, declaredMaxDiscount)
+                            : computedDiscount;
+
+                    int discountedMonthly = monthlyCost - discountInCent;
+                    Integer monthlyDiscountValue = (voucherType == null)
+                            ? null
+                            : discountInCent;
+
+                    // --- CostInfo ---
+                    OfferResponseDto.CostInfo cost = new OfferResponseDto.CostInfo(
+                            discountedMonthly,              // discountedMonthlyCostInCent
+                            monthlyCost,                    // monthlyCostInCent
+                            monthlyCostAfter24,             // monthlyCostAfter24mInCent
+                            monthlyDiscountValue,           // monthlyDiscountValueInCent
+                            declaredMaxDiscount > 0
+                                    ? declaredMaxDiscount
+                                    : discountInCent,          // maxDiscountInCent
+                            true                            // installationService
+                    );
+
+                    // --- TvInfo (none on WebWunder) ---
+                    OfferResponseDto.TvInfo tv = new OfferResponseDto.TvInfo(false, "");
+
+                    // --- Assemble final DTO ---
+                    return new OfferResponseDto(
+                            String.valueOf(p.productId()),
+                            p.providerName(),
+                            contract,
+                            cost,
+                            tv
+                    );
+                })
+                .collect(Collectors.toList());
     }
 }
