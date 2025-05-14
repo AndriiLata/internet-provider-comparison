@@ -6,12 +6,6 @@ public record OfferResponseDto(
         ContractInfo contractInfo,
         CostInfo costInfo,
         TvInfo tvInfo
-                     // "ABSOLUTE" or "PERCENTAGE"
-        // Verbyndich:  FernseherAngebot "RobynTV+"
-        // ServusSpeed: FernseherAngebot, limitFrom, maxAge
-        // WebWunder: maxDiscountInCent
-        // ByteMe: FernseherAngebot, limitFrom, maxAge
-        // PingPerfect: FernseherAngebot, limitFrom, maxAge
 ) {
     public static record CostInfo(
             int discountedMonthlyCostInCent,

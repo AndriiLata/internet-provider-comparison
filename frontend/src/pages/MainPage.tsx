@@ -1,3 +1,5 @@
+// src/pages/MainPage.tsx
+
 import { useState } from "react";
 import {
   useLocation,
@@ -14,67 +16,70 @@ import {
 } from "../types/offer";
 import { useOfferStream } from "../hooks/useOfferStream";
 
-/* helper: sort according to dropdown selection */
+type SortMode = "RANK" | "PRICE" | "SPEED";
+
+/** Sort helper with guards for missing costInfo/contractInfo */
 function sortOffers(list: OfferResponseDto[], mode: SortMode) {
   const arr = [...list];
+
+  const price = (o: OfferResponseDto) => {
+    const c = o.costInfo;
+    if (!c) return Infinity;
+    return c.discountedMonthlyCostInCent > 0
+      ? c.discountedMonthlyCostInCent
+      : c.monthlyCostInCent;
+  };
+
+  const speedVal = (o: OfferResponseDto) =>
+    o.contractInfo?.speed ?? 0;
+
   switch (mode) {
-    case "CHEAP":
-      arr.sort((a, b) => a.monthlyCostInCent - b.monthlyCostInCent);
+    case "PRICE":
+      arr.sort((a, b) => price(a) - price(b));
       break;
-    case "FAST":
-      arr.sort((a, b) => b.speed - a.speed);
+    case "SPEED":
+      arr.sort((a, b) => speedVal(b) - speedVal(a));
       break;
-    case "BEST":
+    case "RANK":
     default:
-      arr.sort((a, b) => {
-        const scoreA = a.monthlyCostInCent / a.speed;
-        const scoreB = b.monthlyCostInCent / b.speed;
-        return scoreA === scoreB
-          ? a.monthlyCostInCent - b.monthlyCostInCent
-          : scoreA - scoreB;
-      });
+      arr.sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0));
   }
   return arr;
 }
 
-type SortMode = "BEST" | "CHEAP" | "FAST";
-
 export default function MainPage() {
-  /* 1 ▪ cached offers for instant paint */
+  // Filter out any cached offers that don’t match the new DTO shape:
   const savedOffers: OfferResponseDto[] = (() => {
     const raw = localStorage.getItem("lastOffers");
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    try {
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      return arr.filter((o) => o.costInfo != null);
+    } catch {
+      return [];
+    }
   })();
 
-  /* 2 ▪ read router state + navigation type */
   const location = useLocation() as { state?: { query: SearchQuery } };
-  const navType: NavigationType = useNavigationType(); // "PUSH" | "POP" | "REPLACE"
-
-  /* treat as “fresh landing-page navigation” only on PUSH */
+  const navType: NavigationType = useNavigationType();
   const cameFromLanding = navType === "PUSH" && !!location.state?.query;
 
-  /* 3 ▪ criteria:
-        • PUSH from landing → start fetch
-        • reload/POP        → null (show cache only)                    */
   const [criteria, setCriteria] = useState<SearchCriteria | null>(
-    cameFromLanding ? toCriteria(location.state!.query) : null,
+    cameFromLanding ? toCriteria(location.state!.query) : null
   );
 
-  /* 4 ▪ streaming hook (fetches only when criteria != null) */
   const { offers, loading, error } = useOfferStream(criteria, savedOffers);
 
-  /* 5 ▪ sidebar search */
   const handleSearch = (q: SearchQuery) => {
     const crit = toCriteria(q);
     setCriteria(crit);
     localStorage.setItem("lastCriteria", JSON.stringify(crit));
   };
 
-  /* 6 ▪ sorting */
-  const [sortMode, setSortMode] = useState<SortMode>("CHEAP");
+  const [sortMode, setSortMode] = useState<SortMode>("PRICE");
   const displayed = sortOffers(offers, sortMode);
 
-  /* 7 ▪ UI */
   return (
     <div className="h-screen flex overflow-hidden">
       <Sidebar onSearch={handleSearch} />
@@ -82,19 +87,20 @@ export default function MainPage() {
       <main className="flex-1 p-10 flex flex-col">
         <div className="prose flex justify-between items-center mb-4">
           <h2 className="m-3">Results</h2>
-
           <label className="form-control w-60 ml-auto">
             <div className="label p-0 pb-1">
-              <span className="label-text text-sm opacity-70">Sort by</span>
+              <span className="label-text text-sm opacity-70">
+                Sort by
+              </span>
             </div>
             <select
               className="select select-bordered select-sm"
               value={sortMode}
               onChange={(e) => setSortMode(e.target.value as SortMode)}
             >
-              <option value="BEST">Best</option>
-              <option value="CHEAP">Cheapest First</option>
-              <option value="FAST">Fastest First</option>
+              <option value="RANK">Ranking</option>
+              <option value="PRICE">Price</option>
+              <option value="SPEED">Speed</option>
             </select>
           </label>
         </div>

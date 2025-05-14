@@ -1,21 +1,43 @@
+/* ----------  UI DTO matching the new backend  ---------- */
+
 export interface OfferResponseDto {
     productId: string;
     provider: string;
-    speed: number; // mbps
-    monthlyCostInCent: number;
-    monthlyCostAfter24mInCent: number | null;
-    durationInMonths: number;
-    connectionType: string;
-    tvIncluded: boolean;
-    installationService: boolean;
-    voucherValueInCent: number | null;
-    voucherType: "ABSOLUTE" | "PERCENTAGE" | null;
-    discountInCent: number | null;
+    contractInfo: ContractInfo;
+    costInfo: CostInfo;
+    tvInfo: TvInfo;
+    /** avg. user rating 0-5 – generated client-side for now */
+    avgRating?: number;
   }
+  
+  /* …nested records … */
+  export interface ContractInfo {
+    connectionType: string;
+    speed: number;                       // Mbit/s
+    speedLimitFrom?: number | null;      // GB (optional)
+    contractDurationInMonths?: number | null;
+    maxAge?: number | null;              // years (optional)
+  }
+  
+  export interface CostInfo {
+    discountedMonthlyCostInCent: number;
+    monthlyCostInCent: number;
+    monthlyCostAfter24mInCent?: number | null;
+    monthlyDiscountValueInCent?: number | null;
+    maxDiscountInCent?: number | null;
+    installationService: boolean;
+  }
+  
+  export interface TvInfo {
+    tvIncluded: boolean;
+    tvBrand?: string | null;
+  }
+  
+  /* ---------- search ---------- */
   
   export interface SearchCriteria {
     street: string;
-    houseNumber: number;          // 👈 changed
+    houseNumber: number;
     city: string;
     postalCode: string;
     connectionTypes: string[] | null;
@@ -28,28 +50,29 @@ export interface OfferResponseDto {
     cityOrPostal: string;
     street: string;
     number: string;
-    connectionTypes: string[]; // DSL, FIBER …
-    maxPrice: number; // €
+    connectionTypes: string[];
+    maxPrice: number;             // €
     includeTV: boolean;
     installationService: boolean;
   }
-
+  
+  /* helper ----------------------------------------------------------------- */
   function splitCityPostal(raw: string): { city: string; postalCode: string } {
     const trimmed = raw.trim();
-    const m = trimmed.match(/(\d{5})/);          // look for a 5-digit number
+    const m = trimmed.match(/(\d{5})/);           // first 5-digit number
     if (!m) return { city: trimmed, postalCode: "" };
   
     const postal = m[1];
     const city = trimmed
       .replace(postal, "")
-      .replace(/[,\s]+$/, "")                     // kill trailing space/comma
-      .replace(/^\s+/, "")                       // kill leading space
+      .replace(/[,\s]+$/, "")
+      .replace(/^\s+/, "")
       .trim();
   
     return { city, postalCode: postal };
   }
   
-  // Helper to turn form state into API DTO
+  /** turn form state into API DTO */
   export function toCriteria(q: SearchQuery): SearchCriteria {
     const { city, postalCode } = splitCityPostal(q.cityOrPostal);
   
@@ -58,7 +81,7 @@ export interface OfferResponseDto {
       houseNumber: parseInt(q.number.trim(), 10) || 0,
       city,
       postalCode,
-      connectionTypes: q.connectionTypes,          // ✅ send full list
+      connectionTypes: q.connectionTypes,
       maxPriceInCent: q.maxPrice ? q.maxPrice * 100 : null,
       includeTv: q.includeTV,
       includeInstallation: q.installationService,
