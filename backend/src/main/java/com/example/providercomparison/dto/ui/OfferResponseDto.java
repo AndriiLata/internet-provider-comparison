@@ -5,8 +5,14 @@ public record OfferResponseDto(
         String provider,
         ContractInfo contractInfo,
         CostInfo costInfo,
-        TvInfo tvInfo
+        TvInfo tvInfo,
+        Double averageRating
 ) {
+    public OfferResponseDto withAverageRating(Double newAvg) {
+        return new OfferResponseDto(
+                productId, provider, contractInfo, costInfo, tvInfo, newAvg);
+    }
+
     public static record CostInfo(
             int discountedMonthlyCostInCent,
             int monthlyCostInCent,

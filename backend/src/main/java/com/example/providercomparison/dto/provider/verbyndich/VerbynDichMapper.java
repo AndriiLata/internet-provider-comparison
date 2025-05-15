@@ -100,7 +100,8 @@ public final class VerbynDichMapper {
                 provider,
                 contract,
                 cost,
-                tv
+                tv,
+                0.0
         );
     }
 

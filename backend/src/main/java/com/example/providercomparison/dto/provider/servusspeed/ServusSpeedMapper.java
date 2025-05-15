@@ -24,7 +24,8 @@ public class ServusSpeedMapper {
                     "",             // provider
                     defaultContract,
                     defaultCost,
-                    defaultTv
+                    defaultTv,
+                    0.0
             );
         }
 
@@ -88,7 +89,8 @@ public class ServusSpeedMapper {
                 provider,
                 contractInfo,
                 costInfo,
-                tvInfo
+                tvInfo,
+                0.0
         );
     }
 }

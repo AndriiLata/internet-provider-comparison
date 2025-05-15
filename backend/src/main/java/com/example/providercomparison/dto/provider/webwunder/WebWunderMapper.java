@@ -114,7 +114,8 @@ class WebWunderMapper {
                             p.providerName(),
                             contract,
                             cost,
-                            tv
+                            tv,
+                            0.0
                     );
                 })
                 .collect(Collectors.toList());

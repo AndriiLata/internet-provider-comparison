@@ -14,13 +14,21 @@ import java.util.List;
 public class OfferServiceReactiveImpl implements OfferServiceReactive {
 
     private final List<OfferProvider> providers;
+    private final RatingService ratingService;
 
     @Override
     public Flux<OfferResponseDto> offersFromAllProviders(SearchCriteria criteria) {
         return Flux.merge(
-                providers.stream()
-                        .map(p -> p.offers(criteria))
-                        .toList()
-        );
+                        providers.stream()
+                                .map(p -> p.offers(criteria))   // mapper can still set avg = 0.0
+                                .toList()
+                )
+                /* ↓  NEW enrichment step ↓ */
+                .flatMap(offer ->
+                        ratingService.averageRating(offer.provider())   // lookup by provider name
+                                .map(offer::withAverageRating)     // replace the 0.0
+                );
     }
 }
+
+

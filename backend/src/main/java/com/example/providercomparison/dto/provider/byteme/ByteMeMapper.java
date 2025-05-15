@@ -51,7 +51,8 @@ public class ByteMeMapper {
                 title,
                 contractInfo,
                 costInfo,
-                tvInfo
+                tvInfo,
+                0.0
         );
     }
 

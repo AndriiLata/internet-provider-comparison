@@ -62,7 +62,8 @@ public class PingPerfectMapper {
                 provider,
                 contractInfo,
                 costInfo,
-                tvInfo
+                tvInfo,
+                0.0
         );
     }
 }
