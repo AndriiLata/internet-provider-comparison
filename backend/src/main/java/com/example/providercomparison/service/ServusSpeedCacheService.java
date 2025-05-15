@@ -4,17 +4,20 @@ import com.example.providercomparison.dto.provider.servusspeed.ServusSpeedClient
 import com.example.providercomparison.dto.provider.servusspeed.ServusSpeedMapper;
 import com.example.providercomparison.dto.ui.OfferResponseDto;
 import com.example.providercomparison.dto.ui.SearchCriteria;
-import com.example.providercomparison.entity.AddressProductEntity;
 import com.example.providercomparison.entity.ServusSpeedProductEntity;
-import com.example.providercomparison.repository.AddressProductRepository;
 import com.example.providercomparison.repository.ServusSpeedProductRepository;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,83 +25,82 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ServusSpeedCacheService {
 
-    private final AddressProductRepository addrRepo;
+    /* ------------------------------------------------------------------
+     *  Dependencies
+     * ---------------------------------------------------------------- */
     private final ServusSpeedProductRepository prodRepo;
-    private final ServusSpeedClient client;
+    private final ServusSpeedClient           client;
 
-    public Flux<OfferResponseDto> productDetailsBatch(List<String> ids,
-                                                      SearchCriteria c) {
+    /* ------------------------------------------------------------------
+     *  City-level cache  (24 h TTL, memory only)
+     * ---------------------------------------------------------------- */
+    private final Cache<String, Mono<List<String>>> cityCache =
+            Caffeine.newBuilder()
+                    .expireAfterWrite(Duration.ofHours(24))
+                    .maximumSize(500)               // ~500 cities ⇒ < 1 MB
+                    .build();
 
-        /* 1) fetch everything we already have */
-        Flux<ServusSpeedProductEntity> cached = prodRepo.findAllById(ids);
+    private static final Retry RETRY_POLICY =
+            Retry.backoff(2, Duration.ofSeconds(1)).jitter(0.2);
 
-        /* 2) remember which came back */
-        Mono<Set<String>> foundIds = cached.map(ServusSpeedProductEntity::getProductId)
-                .collect(Collectors.toSet());
+    /* ================================================================
+     *  Public API
+     * ================================================================ */
 
-        /* 3) turn cached entities into DTOs */
-        Flux<OfferResponseDto> cachedDtos = cached.map(ServusSpeedCacheService::toDto);
-
-        /* 4) when we know the cached set, call API only for the missing ones */
-        Flux<OfferResponseDto> apiDtos = foundIds.flatMapMany(found -> {
-            List<String> missing = ids.stream()
-                    .filter(id -> !found.contains(id))
-                    .toList();
-
-            return Flux.fromIterable(missing)
-                    .flatMap(id -> productDetails(id, c));   // uses 1-by-1 method
-        });
-
-        /* 5) emit cached first, then API results as they arrive */
-        return Flux.concat(cachedDtos, apiDtos);
-    }
-
-
-    /* ---------- address → product ids -------------------------------- */
-
+    /** -------- ① get productIds for a city (cached 24 h) ------------ */
     public Mono<List<String>> productIdsForAddress(SearchCriteria c) {
-
-        return addrRepo.findByStreetAndHouseNumberAndPostalCodeAndCity(
-                        c.street(), c.houseNumber(), c.postalCode(), c.city())
-                .map(AddressProductEntity::getProductId)
-                .collectList()
-                .flatMap(ids -> ids.isEmpty()
-                        ? fetchAndPersistAddress(c)   // miss → ask API
-                        : Mono.just(ids));           // hit  → return
+        String key = canonicalCity(c.city());
+        return cityCache.get(key,
+                __ -> client.getAvailableProducts(c)
+                        .timeout(Duration.ofSeconds(30))
+                        .retryWhen(RETRY_POLICY)
+                        .cache());       // memoise the Mono itself
     }
 
-    private Mono<List<String>> fetchAndPersistAddress(SearchCriteria c) {
-        return client.getAvailableProducts(c)
-                .flatMapMany(Flux::fromIterable)
-                .flatMap(id -> addrRepo.save(toAddressEntity(id, c)).thenReturn(id))
-                .collectList();
-    }
-
-    private static AddressProductEntity toAddressEntity(String id, SearchCriteria c) {
-        AddressProductEntity e = new AddressProductEntity();
-        e.setStreet(c.street());
-        e.setHouseNumber(c.houseNumber());
-        e.setPostalCode(c.postalCode());
-        e.setCity(c.city());
-        e.setProductId(id);
-        return e;
-    }
-
-    /* ---------- product details -------------------------------------- */
-
+    /** -------- ② details for a single productId -------------------- */
     public Mono<OfferResponseDto> productDetails(String id, SearchCriteria c) {
 
         return prodRepo.findById(id)
-                .map(ServusSpeedCacheService::toDto)           // hit
-                .switchIfEmpty(
-                        client.getProductDetails(id, c)        // miss
+                .map(ServusSpeedCacheService::toDto)             // hit
+                .switchIfEmpty(                                  // miss
+                        client.getProductDetails(id, c)
                                 .map(d -> ServusSpeedMapper.toDto(id, d))
                                 .flatMap(dto -> prodRepo
                                         .save(toEntity(dto))
                                         .thenReturn(dto)));
     }
 
-    /* ---------- mappers ---------------------------------------------- */
+    /** -------- ③ batch helper (cached first, API for misses) ------- */
+    public Flux<OfferResponseDto> productDetailsBatch(List<String> ids,
+                                                      SearchCriteria c) {
+
+        Flux<ServusSpeedProductEntity> cached = prodRepo.findAllById(ids);
+
+        Mono<Set<String>> foundIds = cached
+                .map(ServusSpeedProductEntity::getProductId)
+                .collect(Collectors.toSet());
+
+        Flux<OfferResponseDto> cachedDtos = cached.map(ServusSpeedCacheService::toDto);
+
+        Flux<OfferResponseDto> apiDtos = foundIds.flatMapMany(found -> {
+            List<String> missing = ids.stream()
+                    .filter(id -> !found.contains(id))
+                    .toList();
+
+            return Flux.fromIterable(missing)
+                    .flatMap(id -> productDetails(id, c));
+        });
+
+        return Flux.concat(cachedDtos, apiDtos);
+    }
+
+    /* ================================================================
+     *  Helpers
+     * ================================================================ */
+
+    private static String canonicalCity(String city) {
+        return city == null ? "" : city.trim().toLowerCase(Locale.ROOT);
+    }
 
     private static ServusSpeedProductEntity toEntity(OfferResponseDto dto) {
         ServusSpeedProductEntity e = new ServusSpeedProductEntity();
@@ -124,7 +126,7 @@ public class ServusSpeedCacheService {
         e.setTvIncluded(tv.tvIncluded());
         e.setTvBrand(tv.tvBrand());
 
-
+        e.setLastUpdated(LocalDateTime.now());
         return e;
     }
 
