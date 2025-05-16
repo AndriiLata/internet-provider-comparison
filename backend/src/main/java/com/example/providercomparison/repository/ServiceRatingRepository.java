@@ -13,4 +13,7 @@ public interface ServiceRatingRepository extends ReactiveCrudRepository<ServiceR
 
     /** fetch every rating, newest first */
     Flux<ServiceRating> findAllByServiceNameOrderByCreatedAtDesc(String serviceName);
+
+    /** fetch a single rating by service + email */
+    Mono<ServiceRating> findByServiceNameAndEmail(String serviceName, String email);
 }

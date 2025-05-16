@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class RatingServiceImpl implements RatingService {
@@ -17,13 +19,27 @@ public class RatingServiceImpl implements RatingService {
 
     @Override
     public Mono<Void> saveRating(RatingRequestDto dto) {
-        ServiceRating rating = new ServiceRating();
-        rating.setServiceName(dto.serviceName());
-        rating.setUserName(dto.userName());
-        rating.setEmail(dto.email());
-        rating.setRanking(dto.ranking());
-        rating.setComment(dto.comment());
-        return repo.save(rating).then();
+        return repo.findByServiceNameAndEmail(dto.serviceName(), dto.email())
+                /*---------- already exists → update ----------*/
+                .flatMap(existing -> {
+                    existing.setUserName(dto.userName());      // in case it changed
+                    existing.setRanking(dto.ranking());
+                    existing.setComment(dto.comment());
+                    existing.setCreatedAt(LocalDateTime.now()); // optional “edited” timestamp
+                    return repo.save(existing);
+                })
+                /*---------- first rating for this service/email → insert ----------*/
+                .switchIfEmpty(Mono.defer(() -> {
+                    ServiceRating rating = new ServiceRating();
+                    rating.setServiceName(dto.serviceName());
+                    rating.setUserName(dto.userName());
+                    rating.setEmail(dto.email());
+                    rating.setRanking(dto.ranking());
+                    rating.setComment(dto.comment());
+                    rating.setCreatedAt(LocalDateTime.now());
+                    return repo.save(rating);
+                }))
+                .then();   // return Mono<Void>
     }
 
     @Override
