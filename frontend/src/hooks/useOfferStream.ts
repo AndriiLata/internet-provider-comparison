@@ -1,54 +1,54 @@
 import { useEffect, useRef, useState } from "react";
 import type { OfferResponseDto, SearchCriteria } from "../types/offer";
-import { streamOffers, type OfferStream } from "../api/offers";
+import { streamOffers } from "../api/offers";
 
-/* cheapest-price helper for default order */
-const effectivePrice = (o: OfferResponseDto) =>
-  o.costInfo.discountedMonthlyCostInCent > 0
-    ? o.costInfo.discountedMonthlyCostInCent
-    : o.costInfo.monthlyCostInCent;
+interface Result {
+  offers:     OfferResponseDto[];
+  sessionId:  string | null;
+  loading:    boolean;
+  error:      string | null;
+}
 
 export function useOfferStream(
   criteria: SearchCriteria | null,
-  initialOffers: OfferResponseDto[] = [],
-) {
-  const [offers, setOffers] = useState<OfferResponseDto[]>(initialOffers);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<unknown>(null);
-  const streamRef = useRef<OfferStream | null>(null);
+  initial:  OfferResponseDto[] = [],
+): Result {
+  const [offers,    setOffers]   = useState(initial);
+  const [sessionId, setId]       = useState<string | null>(null);
+  const [loading,   setLoading]  = useState(false);
+  const [error,     setError]    = useState<string | null>(null);
+
+  const ctrlRef   = useRef<AbortController | null>(null);
+  const bufferRef = useRef<OfferResponseDto[]>(initial);
 
   useEffect(() => {
-    streamRef.current?.cancel();
-    if (!criteria) {
-      setLoading(false);
-      return;
-    }
+    /* cancel previous stream */
+    ctrlRef.current?.abort();
+
+    if (!criteria) return;
 
     setOffers([]);
-    setError(null);
+    bufferRef.current = [];
+    setId(null);
     setLoading(true);
-    localStorage.setItem("lastOffers", JSON.stringify([]));
+    setError(null);
 
-    streamRef.current = streamOffers(
+    ctrlRef.current = streamOffers(
       criteria,
-      offer => {
-        setOffers(prev => {
-          const next = [...prev, offer];
-          next.sort((a, b) => effectivePrice(a) - effectivePrice(b));
-          localStorage.setItem("lastOffers", JSON.stringify(next));
-          return next;
-        });
+      setId,
+      o => {
+        bufferRef.current = [...bufferRef.current, o];
+        setOffers(bufferRef.current);
       },
-      () => setLoading(false),
-      err => {
-        console.error("Stream error", err);
-        setError(err);
+      e => { setError(String(e)); setLoading(false); },
+      () => {                      // onClose
         setLoading(false);
+        localStorage.setItem("lastOffers", JSON.stringify(bufferRef.current));
       },
     );
 
-    return () => streamRef.current?.cancel();
+    return () => ctrlRef.current?.abort();
   }, [criteria]);
 
-  return { offers, loading, error };
+  return { offers, sessionId, loading, error };
 }

@@ -1,109 +1,81 @@
-// src/pages/MainPage.tsx
-
-import { useState } from "react";
-import {
-  useLocation,
-  useNavigationType,
-  type NavigationType,
-} from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigationType } from "react-router-dom";
 import Sidebar, { type SearchQuery } from "../components/Sidebar";
-import LoadingBanner from "../components/LoadingBanner";
-import ResultsList from "../components/ResultList";
-import {
-  toCriteria,
-  type OfferResponseDto,
-  type SearchCriteria,
-} from "../types/offer";
+import LoadingBanner   from "../components/LoadingBanner";
+import ResultsList     from "../components/ResultList";
+import { toCriteria,
+         type OfferResponseDto,
+         type SearchCriteria }         from "../types/offer";
 import { useOfferStream } from "../hooks/useOfferStream";
 
-type SortMode = "RANK" | "PRICE" | "SPEED";
+type Sort = "RANK" | "PRICE" | "SPEED";
+const sortOffers = (arr: OfferResponseDto[], mode: Sort) => {
+  const price = (o: OfferResponseDto) =>
+    o.costInfo.discountedMonthlyCostInCent || o.costInfo.monthlyCostInCent;
+  const speed = (o: OfferResponseDto) => o.contractInfo?.speed ?? 0;
 
-/** Sort helper with guards for missing costInfo/contractInfo */
-function sortOffers(list: OfferResponseDto[], mode: SortMode) {
-    const arr = [...list];
-    const price = (o: OfferResponseDto) => {
-      const c = o.costInfo;
-      return c.discountedMonthlyCostInCent > 0
-        ? c.discountedMonthlyCostInCent
-        : c.monthlyCostInCent;
-    };
-    const speedVal = (o: OfferResponseDto) => o.contractInfo?.speed ?? 0;
-  
-    switch (mode) {
-      case "PRICE":
-        arr.sort((a, b) => price(a) - price(b));
-        break;
-      case "SPEED":
-        arr.sort((a, b) => speedVal(b) - speedVal(a));
-        break;
-      case "RANK":
-      default:
-        arr.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
-    }
-    return arr;
+  const list = [...arr];
+  switch (mode) {
+    case "PRICE": list.sort((a, b) => price(a) - price(b)); break;
+    case "SPEED": list.sort((a, b) => speed(b)  - speed(a)); break;
+    default:      list.sort((a, b) => (b.averageRating ?? 0) -
+                                      (a.averageRating ?? 0));
   }
+  return list;
+};
+
+/* ---------- bootstrap cached offers ---------- */
+const cached: OfferResponseDto[] = (() => {
+  try { return JSON.parse(localStorage.getItem("lastOffers") || "[]"); }
+  catch { return []; }
+})();
 
 export default function MainPage() {
-  // Filter out any cached offers that don’t match the new DTO shape:
-  const savedOffers: OfferResponseDto[] = (() => {
-    const raw = localStorage.getItem("lastOffers");
-    if (!raw) return [];
-    try {
-      const arr = JSON.parse(raw);
-      if (!Array.isArray(arr)) return [];
-      return arr.filter((o) => o.costInfo != null);
-    } catch {
-      return [];
-    }
-  })();
+  /* form-state coming from landing page? */
+  const loc   = useLocation() as { state?: { query: SearchQuery } };
+  const navOk = useNavigationType() === "PUSH" && loc.state?.query;
+  const [criteria, setCrit] = useState<SearchCriteria | null>(
+    navOk ? toCriteria(loc.state!.query) : null);
 
-  const location = useLocation() as { state?: { query: SearchQuery } };
-  const navType: NavigationType = useNavigationType();
-  const cameFromLanding = navType === "PUSH" && !!location.state?.query;
+  const { offers, sessionId, loading } = useOfferStream(criteria, cached);
 
-  const [criteria, setCriteria] = useState<SearchCriteria | null>(
-    cameFromLanding ? toCriteria(location.state!.query) : null
-  );
+  /* keep cache fresh */
+  useEffect(() => {
+    if (offers.length) localStorage.setItem("lastOffers", JSON.stringify(offers));
+  }, [offers]);
 
-  const { offers, loading, error } = useOfferStream(criteria, savedOffers);
-
-  const handleSearch = (q: SearchQuery) => {
-    const crit = toCriteria(q);
-    setCriteria(crit);
-    localStorage.setItem("lastCriteria", JSON.stringify(crit));
+  /* share link */
+  const copy = async () => {
+    if (!sessionId) return;
+    await navigator.clipboard.writeText(`${location.origin}/#/share/${sessionId}`);
+    alert("Share link copied 📋");
   };
 
-  const [sortMode, setSortMode] = useState<SortMode>("PRICE");
-  const displayed = sortOffers(offers, sortMode);
+  /* sorting */
+  const [sort, setSort] = useState<Sort>("PRICE");
+  const displayed = sortOffers(offers, sort);
 
   return (
     <div className="h-screen flex overflow-hidden">
-      <Sidebar onSearch={handleSearch} />
-
+      <Sidebar onSearch={q => setCrit(toCriteria(q))} />
       <main className="flex-1 p-10 flex flex-col">
         <div className="prose flex justify-between items-center mb-4">
-          <h2 className="m-3">Results</h2>
-          <label className="form-control w-60 ml-auto">
-            <div className="label p-0 pb-1">
-              <span className="label-text text-sm opacity-70">
-                Sort by
-              </span>
-            </div>
-            <select
-              className="select select-bordered select-sm"
-              value={sortMode}
-              onChange={(e) => setSortMode(e.target.value as SortMode)}
-            >
+          <h2>Results</h2>
+          <div className="flex gap-3">
+            <select className="select select-bordered select-sm"
+                    value={sort}
+                    onChange={e => setSort(e.target.value as Sort)}>
               <option value="RANK">RATING</option>
               <option value="PRICE">PRICE</option>
               <option value="SPEED">SPEED</option>
             </select>
-          </label>
+            <button className="btn btn-outline btn-sm"
+                    disabled={!sessionId}
+                    onClick={copy}>Share Results</button>
+          </div>
         </div>
 
         {loading && <LoadingBanner offers={offers} />}
-    
-
         <ResultsList offers={displayed} />
       </main>
     </div>

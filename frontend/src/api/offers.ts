@@ -1,67 +1,41 @@
-
+import { fetchEventSource, type EventSourceMessage } from "@microsoft/fetch-event-source";
 import type { OfferResponseDto, SearchCriteria } from "../types/offer";
 
-export interface OfferStream {
-  cancel: () => void;
+/** Open POST-SSE for a search; returns the AbortController. */
+export function streamOffers(
+  criteria:   SearchCriteria,
+  onId:       (id: string)               => void,
+  onOffer:    (o:  OfferResponseDto)     => void,
+  onError:    (e: unknown)               => void,
+  onClose:    ()                         => void,   // 🔸 new
+) {
+  const ctrl = new AbortController();
+
+  fetchEventSource("/api/offers/stream", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(criteria),
+    signal:  ctrl.signal,
+
+    onopen:  async () => {},               // must return Promise<void>
+    onclose: () => { onClose(); },         // 🔸 notify hook
+    onerror: e  => { onError(e); },
+
+    onmessage(msg: EventSourceMessage) {
+      if (msg.event === "sessionId") {
+        try { onId(JSON.parse(msg.data).sessionId); } catch {}
+        return;
+      }
+      try { onOffer(JSON.parse(msg.data) as OfferResponseDto); } catch {}
+    },
+  });
+
+  return ctrl;
 }
 
-
-/**
- * Starts a POST /api/offers/stream request and calls the supplied callbacks
- * for every SSE `data:` event.
- */
-export function streamOffers(
-  criteria: SearchCriteria,
-  onOffer: (offer: OfferResponseDto) => void,
-  onFinished: () => void,
-  onError: (err: unknown) => void
-): OfferStream {
-  const controller = new AbortController();
-  console.log("▶ sending criteria", criteria);
-
-  fetch("/api/offers/stream", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "text/event-stream",
-    },
-    body: JSON.stringify(criteria),
-    signal: controller.signal,
-  })
-    .then(async (res) => {
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("No readable body on response");
-      const decoder = new TextDecoder();
-      let buffer = "";
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n\n"); // SSE events are separated by blank line
-        buffer = parts.pop() ?? ""; // last chunk (maybe incomplete)
-        for (const part of parts) {
-          const line = part.trimStart();
-          if (line.startsWith("data:")) {
-            const json = line.replace(/^data:\s*/, "");
-            try {
-              const dto: OfferResponseDto = JSON.parse(json);
-              onOffer(dto);
-            } catch (e) {
-              console.error("Could not parse DTO", e);
-            }
-          }
-        }
-      }
-      onFinished();
-    })
-    .catch((err) => {
-      if ((err as any)?.name === "AbortError") return; // ignore cancel
-      onError(err);
-    });
-
-  return {
-    cancel() {
-      controller.abort();
-    },
-  };
+/** Fetch full list for an existing share-ID. */
+export async function fetchOffersForSession(id: string) {
+  const r = await fetch(`/api/offers/session/${id}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return (await r.json()) as OfferResponseDto[];
 }
