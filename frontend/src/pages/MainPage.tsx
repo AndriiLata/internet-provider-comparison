@@ -4,6 +4,7 @@ import Sidebar, { type SearchQuery } from "../components/Sidebar";
 import LoadingBanner from "../components/LoadingBanner";
 import ResultsList from "../components/ResultList";
 import ShareModal from "../components/ShareModal";
+import Topbar from "../components/Topbar";
 
 import {
   toCriteria,
@@ -65,16 +66,11 @@ export default function MainPage() {
     setShowModal(true);
   };
 
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      alert("Link copied!");
-    } catch {
-      alert("Copy failed, please try manually.");
-    }
-  };
+
 
   return (
+    <div className="h-screen flex flex-col">      
+      <Topbar /> 
     <div className="h-screen flex overflow-hidden">
       <Sidebar onSearch={(q) => setCrit(toCriteria(q))} />
       <main className="flex-1 p-10 flex flex-col">
@@ -112,6 +108,7 @@ export default function MainPage() {
             onClose={() => setShowModal(false)}
         />
       </main>
+    </div>
     </div>
   );
 }

@@ -31,8 +31,7 @@ export default function ShareModal({ isOpen, shareUrl, onClose }: ShareModalProp
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      // Swap this alert for your toast system of choice
-      alert("Link copied!");
+    
     } catch {
       alert("Copy failed; please try manually.");
     }

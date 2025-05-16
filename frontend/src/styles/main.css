@@ -1,2 +1,4 @@
 @import "tailwindcss";   /* pulls in all Tailwind utilities */
-@plugin "daisyui";  
+@plugin "daisyui" {
+    themes: light --default, night, retro, cyberpunk, valentine;
+  }
