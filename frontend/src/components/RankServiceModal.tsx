@@ -10,24 +10,40 @@ interface Props {
 }
 
 export default function RankServiceModal({ serviceName, open, onClose }: Props) {
-  const [userName, setUserName]   = useState("");
-  const [email, setEmail]         = useState("");
-  const [ranking, setRanking]     = useState<number>(0);
-  const [comment, setComment]     = useState("");
-  const [loading, setLoading]     = useState(false);
+  const [form, setForm] = useState({
+    userName: "",
+    email: "",
+    ranking: 0,
+    comment: "",
+  });
+  const [loading, setLoading] = useState(false);
 
-  const canSend = userName && email && ranking >= 1;
+  const canSend =
+    form.userName.trim().length > 0 &&
+    form.email.trim().length > 0 &&
+    form.ranking >= 1;
 
-  async function handleSubmit() {
+  const update = <K extends keyof typeof form>(key: K) => (value: typeof form[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     if (!canSend) return;
-    const dto: RatingRequestDto = { serviceName, userName, email, ranking, comment };
+
+    const dto: RatingRequestDto = {
+      serviceName,
+      userName: form.userName,
+      email: form.email,
+      ranking: form.ranking,
+      comment: form.comment,
+    };
 
     try {
       setLoading(true);
       await submitRating(dto);
       toast.success("Thanks for your review!");
       onClose();
-    } catch {
+    } catch (err) {
       toast.error("Could not submit your review");
     } finally {
       setLoading(false);
@@ -35,80 +51,108 @@ export default function RankServiceModal({ serviceName, open, onClose }: Props) 
   }
 
   return (
-    open && (
-      <dialog className="modal modal-open" onCancel={onClose}>
-        <div className="modal-box w-11/12 max-w-md">
-          <h3 className="font-bold text-lg mb-4">Rate this service</h3>
+    <dialog
+      className={`modal ${open ? "modal-open" : ""}`}
+      onClose={onClose}
+      onCancel={onClose}
+    >
+      <form
+        method="dialog"
+        onSubmit={handleSubmit}
+        className="modal-box w-11/12 max-w-md space-y-4"
+      >
+        <h3 className="font-bold text-xl text-center">Rate this service</h3>
 
-          <div className="form-control mb-3">
-            <label className="label">
-              <span className="label-text">Name *</span>
-            </label>
-            <input
-              type="text"
-              className="input input-bordered"
-              value={userName}
-              onChange={e => setUserName(e.target.value)}
-              required
-            />
-          </div>
+        {/* Name */}
+        <div className="form-control w-full">
+          <label className="label" htmlFor="name">
+            <span className="label-text">Name *</span>
+          </label>
+          <input
+            id="name"
+            type="text"
+            className="input input-bordered w-full"
+            placeholder="Your name"
+            value={form.userName}
+            onChange={(e) => update("userName")(e.target.value)}
+            required
+          />
+        </div>
 
-          <div className="form-control mb-3">
-            <label className="label">
-              <span className="label-text">Email *</span>
-            </label>
-            {/* daisyUI email validator */}
-            <input
-              type="email"
-              className="input input-bordered"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-            />
-          </div>
+        {/* Email */}
+        <div className="form-control w-full">
+          <label className="label" htmlFor="email">
+            <span className="label-text">Email *</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            className="input input-bordered validator w-full"
+            placeholder="mail@site.com"
+            value={form.email}
+            onChange={(e) => update("email")(e.target.value)}
+            required
+          />
+          <div className="validator-hint">Enter valid email address</div>
+        </div>
 
-          <div className="form-control mb-3">
-            <label className="label">
-              <span className="label-text">Your rating *</span>
-            </label>
-            <div className="rating rating-lg">
-              {[1,2,3,4,5].map(v => (
-                <input
-                  key={v}
-                  type="radio"
-                  name="rating"
-                  className="mask mask-star-2 bg-orange-400"
-                  checked={ranking === v}
-                  onChange={() => setRanking(v)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="form-control mb-6">
-            <label className="label">
-              <span className="label-text">Comment (optional)</span>
-            </label>
-            <textarea
-              className="textarea textarea-bordered"
-              rows={3}
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-            ></textarea>
-          </div>
-
-          <div className="modal-action">
-            <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-            <button
-              className="btn btn-primary"
-              disabled={!canSend || loading}
-              onClick={handleSubmit}
-            >
-              {loading ? "Sending…" : "Send"}
-            </button>
+        {/* Rating */}
+        <div className="form-control w-full">
+          <label className="label">
+            <span className="label-text">Your rating *</span>
+          </label>
+          <div className="rating rating-lg flex justify-center gap-2">
+            {[1, 2, 3, 4, 5].map((v) => (
+              <input
+                key={v}
+                type="radio"
+                name="rating"
+                aria-label={`${v} star${v > 1 ? "s" : ""}`}
+                className="mask mask-star-2 bg-warning"
+                checked={form.ranking === v}
+                onChange={() => update("ranking")(v)}
+              />
+            ))}
           </div>
         </div>
-      </dialog>
-    )
+
+        {/* Comment */}
+        <div className="form-control w-full">
+          <label className="label" htmlFor="comment">
+            <span className="label-text">Comment (optional)</span>
+          </label>
+          <textarea
+            id="comment"
+            className="textarea textarea-bordered w-full h-24"
+            placeholder="Share more about your experience…"
+            value={form.comment}
+            onChange={(e) => update("comment")(e.target.value)}
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="modal-action justify-between">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn btn-warning"
+            disabled={!canSend || loading}
+          >
+            {loading ? (
+              <span className="loading loading-spinner loading-xs" />
+            ) : (
+              "Send"
+            )}
+          </button>
+        </div>
+      </form>
+    </dialog>
   );
 }
