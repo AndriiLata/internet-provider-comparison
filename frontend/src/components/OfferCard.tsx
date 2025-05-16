@@ -168,7 +168,7 @@ export default function OfferCard({ offer }: { offer: OfferResponseDto }) {
                 className="btn btn-warning btn-sm"
                 onClick={() => setRankOpen(true)}
               >
-                Rank service
+                RATE SERVICE
               </button>
             </div>
           </div>

@@ -94,9 +94,9 @@ export default function MainPage() {
               value={sortMode}
               onChange={(e) => setSortMode(e.target.value as SortMode)}
             >
-              <option value="RANK">Ranking</option>
-              <option value="PRICE">Price</option>
-              <option value="SPEED">Speed</option>
+              <option value="RANK">RATING</option>
+              <option value="PRICE">PRICE</option>
+              <option value="SPEED">SPEED</option>
             </select>
           </label>
         </div>
