@@ -26,20 +26,26 @@ public class OfferController {
 
         return share.createSession(criteria)
                 .flatMapMany(sessionId -> {
-                    /* 1 ‒ push the UUID first */
+
+                    /* 1 ── push the UUID first */
                     Flux<ServerSentEvent<ShareLinkDto>> idEvent =
                             Flux.just(ServerSentEvent.<ShareLinkDto>builder(
                                             new ShareLinkDto(sessionId.toString()))
                                     .event("sessionId")
                                     .build());
 
-                    /* 2 ‒ normal offer stream, but persisted */
-                    Flux<OfferResponseDto> offers =
-                            share.saveOffers(sessionId, svc.offersFromAllProviders(criteria))
-                                    .filter(criteria::matches);
+                    /* 2 ── provider calls + user filters */
+                    Flux<OfferResponseDto> filtered =
+                            svc.offersFromAllProviders(criteria)
+                                    .filter(criteria::matches);          // 🔸 apply filters first
 
+                    /* 3 ── persist only what passed the filters */
+                    Flux<OfferResponseDto> persisted =
+                            share.saveOffers(sessionId, filtered);
+
+                    /* 4 ── convert to SSE */
                     Flux<ServerSentEvent<OfferResponseDto>> offerEvents =
-                            offers.map(dto -> ServerSentEvent.builder(dto).build());
+                            persisted.map(dto -> ServerSentEvent.builder(dto).build());
 
                     return Flux.concat(idEvent, offerEvents);
                 });
