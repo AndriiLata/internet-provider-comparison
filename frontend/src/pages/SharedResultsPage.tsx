@@ -46,9 +46,9 @@ export default function SharedResultsPage() {
         <select className="select select-bordered select-sm"
                 value={sort}
                 onChange={e => setSort(e.target.value as Sort)}>
-          <option value="RANK">RATING</option>
-          <option value="PRICE">PRICE</option>
-          <option value="SPEED">SPEED</option>
+          <option value="RANK">USER RATING</option>
+          <option value="PRICE">CHEAPEST FIRST</option>
+          <option value="SPEED">FASTEST FIRST</option>
         </select>
       </div>
 

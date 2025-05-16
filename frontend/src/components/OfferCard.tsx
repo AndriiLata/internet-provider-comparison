@@ -77,7 +77,7 @@ export default function OfferCard({ offer }: { offer: OfferResponseDto }) {
           {/* rating column */}
           <div className="flex flex-col items-center w-28 shrink-0">
             <span className="text-xl font-bold text-primary mb-1">
-              {rating.toFixed(1)}/5
+              {rating.toFixed(1)}
             </span>
             <div className="rating rating-sm">
               {[1, 2, 3, 4, 5].map(i => (
