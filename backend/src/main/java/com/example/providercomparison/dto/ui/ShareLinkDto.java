@@ -1,5 +1,4 @@
 package com.example.providercomparison.dto.ui;
 
-public class ShareLinkDto {
-    // ToDo
-}
+/** sent to the client as the very first SSE event */
+public record ShareLinkDto(String sessionId) { }

@@ -1,40 +1,53 @@
 package com.example.providercomparison.controller;
 
-import com.example.providercomparison.dto.ui.OfferResponseDto;
-import com.example.providercomparison.dto.ui.SearchCriteria;
-import com.example.providercomparison.service.OfferService;
+import com.example.providercomparison.dto.ui.*;
 import com.example.providercomparison.service.OfferServiceReactive;
+import com.example.providercomparison.service.ShareLinkService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
-import java.util.List;
+import java.util.UUID;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/offers")
+@RequiredArgsConstructor
 public class OfferController {
-    private final OfferService offerService;
 
     private final OfferServiceReactive svc;
+    private final ShareLinkService     share;
 
+    /** streaming search + persistence + share-ID */
+    @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<?>> streamOffers(@RequestBody SearchCriteria criteria) {
 
-    public OfferController(OfferService offerService, OfferServiceReactive offerServiceReactive) {
-        this.offerService = offerService;
-        this.svc = offerServiceReactive;
+        return share.createSession(criteria)
+                .flatMapMany(sessionId -> {
+                    /* 1 ‒ push the UUID first */
+                    Flux<ServerSentEvent<ShareLinkDto>> idEvent =
+                            Flux.just(ServerSentEvent.<ShareLinkDto>builder(
+                                            new ShareLinkDto(sessionId.toString()))
+                                    .event("sessionId")
+                                    .build());
+
+                    /* 2 ‒ normal offer stream, but persisted */
+                    Flux<OfferResponseDto> offers =
+                            share.saveOffers(sessionId, svc.offersFromAllProviders(criteria))
+                                    .filter(criteria::matches);
+
+                    Flux<ServerSentEvent<OfferResponseDto>> offerEvents =
+                            offers.map(dto -> ServerSentEvent.builder(dto).build());
+
+                    return Flux.concat(idEvent, offerEvents);
+                });
     }
 
-    @PostMapping(value = "/stream",
-            produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<OfferResponseDto>> streamOfferFlux(@RequestBody SearchCriteria criteria) {
-
-        return Flux.merge(svc.offersFromAllProviders(criteria))
-                .filter(criteria::matches) // your TODO
-                .map(dto -> ServerSentEvent.builder(dto).build());
-        // When the client closes the connection, WebFlux
-        // cancels the subscription for you.
+    /** retrieve a previously-saved list */
+    @GetMapping("/session/{sessionId}")
+    public Flux<OfferResponseDto> offersBySession(@PathVariable UUID sessionId) {
+        return share.offersForSession(sessionId);
     }
-
 }
