@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import PlzCityAutocomplete from "./PlzCityAutocomplete";
-import StreetAutocomplete from "./StreetAutocomplete";
+import PlzCityAutocomplete from "./autocomplition/PlzCityAutocomplete";
+import StreetAutocomplete from "./autocomplition/StreetAutocomplete";
 import { usePlzSuggestions } from "../hooks/usePlzSuggestions";
 import { useStreetSuggestions } from "../hooks/useStreetSuggestions";
 

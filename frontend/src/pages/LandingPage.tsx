@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import PlzCityAutocomplete from "../components/PlzCityAutocomplete";
-import StreetAutocomplete from "../components/StreetAutocomplete";
+import PlzCityAutocomplete from "../components/autocomplition/PlzCityAutocomplete";
+import StreetAutocomplete from "../components/autocomplition/StreetAutocomplete";
 import { usePlzSuggestions } from "../hooks/usePlzSuggestions";
 import { useStreetSuggestions } from "../hooks/useStreetSuggestions";
 import type { SearchQuery } from "../components/Sidebar";

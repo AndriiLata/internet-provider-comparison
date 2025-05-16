@@ -20,32 +20,28 @@ type SortMode = "RANK" | "PRICE" | "SPEED";
 
 /** Sort helper with guards for missing costInfo/contractInfo */
 function sortOffers(list: OfferResponseDto[], mode: SortMode) {
-  const arr = [...list];
-
-  const price = (o: OfferResponseDto) => {
-    const c = o.costInfo;
-    if (!c) return Infinity;
-    return c.discountedMonthlyCostInCent > 0
-      ? c.discountedMonthlyCostInCent
-      : c.monthlyCostInCent;
-  };
-
-  const speedVal = (o: OfferResponseDto) =>
-    o.contractInfo?.speed ?? 0;
-
-  switch (mode) {
-    case "PRICE":
-      arr.sort((a, b) => price(a) - price(b));
-      break;
-    case "SPEED":
-      arr.sort((a, b) => speedVal(b) - speedVal(a));
-      break;
-    case "RANK":
-    default:
-      arr.sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0));
+    const arr = [...list];
+    const price = (o: OfferResponseDto) => {
+      const c = o.costInfo;
+      return c.discountedMonthlyCostInCent > 0
+        ? c.discountedMonthlyCostInCent
+        : c.monthlyCostInCent;
+    };
+    const speedVal = (o: OfferResponseDto) => o.contractInfo?.speed ?? 0;
+  
+    switch (mode) {
+      case "PRICE":
+        arr.sort((a, b) => price(a) - price(b));
+        break;
+      case "SPEED":
+        arr.sort((a, b) => speedVal(b) - speedVal(a));
+        break;
+      case "RANK":
+      default:
+        arr.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
+    }
+    return arr;
   }
-  return arr;
-}
 
 export default function MainPage() {
   // Filter out any cached offers that don’t match the new DTO shape:

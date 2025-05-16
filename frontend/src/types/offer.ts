@@ -1,14 +1,14 @@
 /* ----------  UI DTO matching the new backend  ---------- */
 
 export interface OfferResponseDto {
-    productId: string;
-    provider: string;
-    contractInfo: ContractInfo;
-    costInfo: CostInfo;
-    tvInfo: TvInfo;
-    /** avg. user rating 0-5 – generated client-side for now */
-    avgRating?: number;
-  }
+  productId: string;
+  provider: string;
+  contractInfo: ContractInfo;
+  costInfo: CostInfo;
+  tvInfo: TvInfo;
+  /** average user rating 0‒5 – supplied by backend */
+  averageRating: number;
+}
   
   /* …nested records … */
   export interface ContractInfo {
