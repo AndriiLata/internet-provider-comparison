@@ -10,7 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 
@@ -18,6 +20,8 @@ import java.util.List;
 public class ServusSpeedClientImpl implements ServusSpeedClient {
 
     private final WebClient web;
+    private static final Retry RETRY_POLICY =
+            Retry.backoff(2, Duration.ofSeconds(1)).jitter(0.2);
 
     public ServusSpeedClientImpl(
             @Value("${provider.servusspeed.base-url}") String base,
@@ -43,21 +47,23 @@ public class ServusSpeedClientImpl implements ServusSpeedClient {
                 .bodyValue(req)
                 .retrieve()
                 .bodyToMono(InternetOfferResponse.class)
+                .retryWhen(RETRY_POLICY)            // retry 503/5xx twice
                 .map(resp -> {
                     if (resp == null || resp.availableProducts() == null) {
-                        return Collections.<String>emptyList();
+                        return Collections.<String>emptyList();      // 👈 hint
                     }
                     return resp.availableProducts().stream()
                             .map(Object::toString)
                             .toList();
                 })
-                .defaultIfEmpty(Collections.<String>emptyList());
+                .defaultIfEmpty(Collections.<String>emptyList());     // 👈 hint
     }
 
 
     @Override
     public Mono<DetailedResponseData> getProductDetails(String id,
                                                         SearchCriteria c) {
+
         var req = new InternetOfferRequest(
                 new RequestAddress(c.street(), c.houseNumber(),
                         c.postalCode(), c.city(), "DE"));
@@ -67,8 +73,7 @@ public class ServusSpeedClientImpl implements ServusSpeedClient {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(req)
                 .retrieve()
-                .bodyToMono(DetailedResponseData.class);
+                .bodyToMono(DetailedResponseData.class)
+                .retryWhen(RETRY_POLICY);
     }
 }
-
-
