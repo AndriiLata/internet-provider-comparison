@@ -34,9 +34,9 @@ public class ServusSpeedProvider implements OfferProvider {
 
         return cache.productIdsForAddress(criteria)          // Mono<List<String>>
                 .flatMapMany(ids -> Flux.fromIterable(ids))
-                .delayElements(Duration.ofMillis(delayMs))    // ① spread requests
+                .delayElements(Duration.ofMillis(delayMs))    //  spread requests
                 .flatMap(id -> cache.productDetails(id, criteria),
-                        parallelism)                         // ② limit concurrency
+                        parallelism)                         // limit concurrency
                 .onErrorContinue((e, __) ->
                         log.warn("ServusSpeed stream error: {}", e.toString()));
     }

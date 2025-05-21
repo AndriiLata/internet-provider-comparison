@@ -52,7 +52,7 @@ public class ServusSpeedClientImpl implements ServusSpeedClient {
                             .map(Object::toString)             // or p -> p.id()
                             .toList();                          // Java16+ collector
                 })
-                .defaultIfEmpty(Collections.<String>emptyList());  // ⇠ same here
+                .defaultIfEmpty(Collections.<String>emptyList());  
     }
 
 

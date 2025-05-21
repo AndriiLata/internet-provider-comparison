@@ -111,6 +111,7 @@ export default function Sidebar({ onSearch }: Props) {
               onChange={v => setForm(f => ({ ...f, street: v }))}
               plz={plz}
               city={city}
+              disabled={!validPlzCity}
             />
 
             <input
@@ -120,6 +121,7 @@ export default function Sidebar({ onSearch }: Props) {
               type="number"
               placeholder="Nr"
               className={`input input-bordered w-24 ${!validNumber ? "input-error" : ""}`}
+              disabled={!validStreet}
             />
           </div>
 

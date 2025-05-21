@@ -7,6 +7,7 @@ interface Props {
   plz: string;
   city: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export default function StreetAutocomplete({
@@ -15,6 +16,7 @@ export default function StreetAutocomplete({
   plz,
   city,
   className = "",
+  disabled = false,
 }: Props) {
   const [open, setOpen]   = useState(false);
   const [error, setError] = useState(false);
@@ -23,6 +25,7 @@ export default function StreetAutocomplete({
   const isValid = !value || suggs.some(s => s.street === value);
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     setError(false);
     onChange(e.target.value);
     setOpen(true);
@@ -50,6 +53,7 @@ export default function StreetAutocomplete({
   };
 
   return (
+    
     <div className={`relative ${className}`}>
       <input
         type="text"
@@ -58,9 +62,10 @@ export default function StreetAutocomplete({
         onChange={handleInput}
         onBlur={handleBlur}
         autoComplete="off"
-        className={`input input-bordered w-full ${
-          error ? "input-error" : ""
-        }`}
+        disabled={disabled}
+        className={`input input-bordered w-full 
+          ${error ? "input-error" : ""}
+          ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
       />
 
       {error && (
@@ -69,7 +74,7 @@ export default function StreetAutocomplete({
         </p>
       )}
 
-      {open && suggs.length > 0 && (
+      {open && !disabled && suggs.length > 0 && (
         <ul className="absolute left-0 right-0 z-10 mt-1 menu bg-base-200 rounded-box shadow-lg max-h-60 overflow-y-auto">
           {suggs.map((s) => (
             <li

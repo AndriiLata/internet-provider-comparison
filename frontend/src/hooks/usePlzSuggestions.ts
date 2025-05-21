@@ -1,7 +1,6 @@
-// hooks/usePlzSuggestions.ts
 import { useEffect, useRef, useState } from "react";
 
-/** Vorschlag aus dem PLZ-/Stadt-Datensatz */
+
 export interface PlzSuggestion {
   label: string;   // "80331 München"
   plz:   string;   // "80331"
@@ -11,10 +10,6 @@ export interface PlzSuggestion {
 const ENDPOINT = "https://public.opendatasoft.com/api/records/1.0/search/";
 const DATASET  = "georef-germany-postleitzahl";
 
-/**
- * Holt bis zu `limit` PLZ/Stadt-Vorschläge (Debounce 250 ms).
- * Format des `label` ist immer "<PLZ> <Stadt>".
- */
 export function usePlzSuggestions(query: string, limit = 6) {
   const [data, setData] = useState<PlzSuggestion[]>([]);
   const abort = useRef<AbortController | null>(null);
@@ -43,7 +38,7 @@ export function usePlzSuggestions(query: string, limit = 6) {
         .then(json =>
           setData(
             json.records.map((rec: any) => {
-              const label = rec.fields.plz_name_long as string;     // "80331 München"
+              const label = rec.fields.plz_name_long as string;     // 80331 München
               const [plz, ...rest] = label.split(" ");
               return { label, plz, city: rest.join(" ") };
             }),

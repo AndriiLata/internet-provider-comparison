@@ -100,6 +100,7 @@ export default function LandingPage() {
                   onChange={v => setForm(f => ({ ...f, street: v }))}
                   plz={plz}
                   city={city}
+                  disabled={!validPlzCity}
                 />
                 <input
                   type="number"
@@ -107,6 +108,7 @@ export default function LandingPage() {
                   value={form.number}
                   onChange={e => setForm(f => ({ ...f, number: e.target.value }))}
                   className={`input input-bordered w-24 ${!validNumber}`}
+                  disabled={!validPlzCity}
                 />
               </div>
             </div>
