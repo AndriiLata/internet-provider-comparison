@@ -14,19 +14,21 @@ public class ByteMeMapper {
                 : o.providerName().split(",", 2)[0].trim();
 
         // 2) build ContractInfo, defaulting any null Integer → 0
+        int contractDuration = Math.max(1, o.durationInMonths());          // ❶ guard against 0
         OfferResponseDto.ContractInfo contractInfo = new OfferResponseDto.ContractInfo(
                 o.connectionType(),
                 o.speed()      != 0 ? o.speed()      : 0,
                 o.limitFrom()  != null ? o.limitFrom()  : 0,
-                o.durationInMonths(),
+                contractDuration,
                 o.maxAge()     != null ? o.maxAge()     : null
         );
 
-        // 3) compute the absolute voucher value (guards against null!)
+        // 3) compute the per-month voucher value (prorate if ABSOLUTE)
         int voucherValue = voucherValueInCent(
                 o.voucherType(),
                 o.voucherValueInCent(),
-                o.monthlyCostInCent()
+                o.monthlyCostInCent(),
+                contractDuration                      // ❷ new parameter
         );
 
         // 4) build CostInfo, using voucherValue for both discount and maxDiscount
@@ -57,26 +59,28 @@ public class ByteMeMapper {
     }
 
     /**
-     * @param voucherType      "ABSOLUTE" or "PERCENTAGE"
-     * @param voucherValue     raw Integer value (may be null!)
-     * @param monthlyCostInCent  the normal cost in cents
-     * @return the absolute discount in cents
+     * @param voucherType          "ABSOLUTE" or "PERCENTAGE"
+     * @param voucherValue         raw Integer value (may be null!)
+     * @param monthlyCostInCent    the normal cost in cents
+     * @param durationInMonths     contract length used to prorate absolute vouchers
+     * @return the per-month discount in cents
      */
-    private static int voucherValueInCent(String voucherType,
+    private static int voucherValueInCent(String  voucherType,
                                           Integer voucherValue,
-                                          int monthlyCostInCent) {
+                                          int     monthlyCostInCent,
+                                          int     durationInMonths) {
+
         if (voucherType == null
                 || voucherType.isBlank()
                 || voucherValue == null) {
             return 0;
         }
 
-        // percentage case
-        if ("PERCENTAGE".equalsIgnoreCase(voucherType)) {
+        if ("PERCENTAGE".equalsIgnoreCase(voucherType)) {          // already “per-month”
             return monthlyCostInCent * voucherValue / 100;
         }
 
-        // absolute case
-        return voucherValue;
+        /* ABSOLUTE ⇒ spread over contract term */
+        return voucherValue / durationInMonths;
     }
 }
