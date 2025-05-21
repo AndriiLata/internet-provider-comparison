@@ -1,4 +1,3 @@
-// src/main/java/com/example/providercomparison/dto/provider/servusspeed/ServusSpeedMapper.java
 package com.example.providercomparison.dto.provider.servusspeed;
 
 import com.example.providercomparison.dto.provider.servusspeed.model.DetailedResponseData;

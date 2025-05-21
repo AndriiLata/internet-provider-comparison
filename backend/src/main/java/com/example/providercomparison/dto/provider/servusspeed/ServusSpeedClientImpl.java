@@ -45,14 +45,13 @@ public class ServusSpeedClientImpl implements ServusSpeedClient {
                 .bodyToMono(InternetOfferResponse.class)
                 .map(resp -> {
                     if (resp == null || resp.availableProducts() == null) {
-                        return Collections.<String>emptyList();   // ⇠ generic fixed
+                        return Collections.<String>emptyList();
                     }
-                    // availableProducts() is List<?>, convert to List<String>
                     return resp.availableProducts().stream()
-                            .map(Object::toString)             // or p -> p.id()
-                            .toList();                          // Java16+ collector
+                            .map(Object::toString)
+                            .toList();
                 })
-                .defaultIfEmpty(Collections.<String>emptyList());  
+                .defaultIfEmpty(Collections.<String>emptyList());
     }
 
 

@@ -4,6 +4,7 @@ import com.example.providercomparison.dto.ui.*;
 import com.example.providercomparison.service.OfferServiceReactive;
 import com.example.providercomparison.service.ShareLinkService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/offers")
 @RequiredArgsConstructor
+@Slf4j
 public class OfferController {
 
     private final OfferServiceReactive svc;
@@ -37,6 +39,8 @@ public class OfferController {
                     /* 2 ── provider calls + user filters */
                     Flux<OfferResponseDto> filtered =
                             svc.offersFromAllProviders(criteria)
+                                    .onErrorContinue((ex, obj) ->
+                                            log.error("Provider failure – skipped {}", obj, ex))
                                     .filter(criteria::matches);          // 🔸 apply filters first
 
                     /* 3 ── persist only what passed the filters */

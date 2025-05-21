@@ -44,12 +44,14 @@ class WebWunderMapper {
                     String connection = info.connectionType() == null
                             ? "UNKNOWN"
                             : info.connectionType().name();
+                    int contractDuration = Math.max(1, info.contractDurationInMonths());   // guard against 0
+
                     OfferResponseDto.ContractInfo contract = new OfferResponseDto.ContractInfo(
                             connection,
-                            info.speed(),       // speed (mbps)
-                            null,       // speedLimitFrom
-                            info.contractDurationInMonths(),
-                            null                   // maxAge (not used)
+                            info.speed(),                  // speed (mbps)
+                            null,                          // speedLimitFrom
+                            contractDuration,
+                            null                           // maxAge (not used)
                     );
 
                     // --- Base costs ---
@@ -60,10 +62,10 @@ class WebWunderMapper {
 
                     // --- Voucher parsing ---
                     Output.Voucher v = info.voucher();
-                    String voucherType   = null;
-                    Integer rawVoucher   = null;
-                    int computedDiscount = 0;
-                    int declaredMaxDiscount = 0;
+                    String voucherType = null;
+                    Integer rawVoucher = null;   // as delivered by provider
+                    int computedDiscount = 0;      // discount *before* any cap
+                    int declaredMaxDiscount = 0;      // cap *before* any prorating
 
                     if (v != null) {
                         // declared maximum discount cap
@@ -71,14 +73,13 @@ class WebWunderMapper {
                             declaredMaxDiscount = v.maxDiscountInCent();
                         }
 
-                        if (v.percentage() != null) {
-                            voucherType     = "PERCENTAGE";
-                            rawVoucher      = v.percentage();
-                            // compute absolute discount from percentage
+                        if (v.percentage() != null) {             // already “per-month”
+                            voucherType = "PERCENTAGE";
+                            rawVoucher = v.percentage();
                             computedDiscount = monthlyCost * rawVoucher / 100;
-                        } else if (v.discountInCent() != null) {
-                            voucherType     = "ABSOLUTE";
-                            rawVoucher      = v.discountInCent();
+                        } else if (v.discountInCent() != null) {  // ABSOLUTE ⇒ prorate
+                            voucherType = "ABSOLUTE";
+                            rawVoucher = v.discountInCent();
                             computedDiscount = rawVoucher;
                         }
                     }
@@ -88,6 +89,15 @@ class WebWunderMapper {
                             ? Math.min(computedDiscount, declaredMaxDiscount)
                             : computedDiscount;
 
+
+                    if ("ABSOLUTE".equals(voucherType)) {
+                        discountInCent = discountInCent / contractDuration;
+                        if (declaredMaxDiscount > 0) {
+                            declaredMaxDiscount = declaredMaxDiscount / contractDuration;
+                        }
+                    }
+
+                    // --- Monthly prices after discount ---
                     int discountedMonthly = monthlyCost - discountInCent;
                     Integer monthlyDiscountValue = (voucherType == null)
                             ? null
@@ -95,14 +105,14 @@ class WebWunderMapper {
 
                     // --- CostInfo ---
                     OfferResponseDto.CostInfo cost = new OfferResponseDto.CostInfo(
-                            discountedMonthly,              // discountedMonthlyCostInCent
-                            monthlyCost,                    // monthlyCostInCent
-                            monthlyCostAfter24,             // monthlyCostAfter24mInCent
-                            monthlyDiscountValue,           // monthlyDiscountValueInCent
+                            discountedMonthly,                 // discountedMonthlyCostInCent
+                            monthlyCost,                       // monthlyCostInCent
+                            monthlyCostAfter24,                // monthlyCostAfter24mInCent
+                            monthlyDiscountValue,              // monthlyDiscountValueInCent
                             declaredMaxDiscount > 0
                                     ? declaredMaxDiscount
                                     : discountInCent,          // maxDiscountInCent
-                            true                            // installationService
+                            true                               // installationService
                     );
 
                     // --- TvInfo (none on WebWunder) ---
