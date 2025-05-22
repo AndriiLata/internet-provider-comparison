@@ -186,7 +186,7 @@ export default function Sidebar({ onSearch }: Props) {
             name="maxPrice"
             type="range"
             min="10"
-            max="60"
+            max="80"
             step="1"
             value={form.maxPrice}
             onChange={e =>
@@ -195,7 +195,7 @@ export default function Sidebar({ onSearch }: Props) {
             className="range range-primary"
           />
           <div className="w-full flex justify-between text-xs px-2 opacity-50">
-            {[10, 20, 30, 40, 50, 60].map(v => (
+            {[10, 20, 30, 40, 50, 60, 70, 80].map(v => (
               <span key={v}>€{v}</span>
             ))}
           </div>
