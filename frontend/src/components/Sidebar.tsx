@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PlzCityAutocomplete from "./autocomplition/PlzCityAutocomplete";
 import StreetAutocomplete from "./autocomplition/StreetAutocomplete";
 import { usePlzSuggestions } from "../hooks/usePlzSuggestions";
@@ -25,7 +25,9 @@ const DEFAULT_FORM: SearchQuery = {
   installationService: false,
 };
 
-interface Props { onSearch: (q: SearchQuery) => void; }
+interface Props {
+  onSearch: (q: SearchQuery) => void;
+}
 
 const CONNECTION_OPTIONS = ["DSL", "FIBER", "MOBILE", "CABLE"];
 
@@ -41,13 +43,28 @@ export default function Sidebar({ onSearch }: Props) {
       | SearchQuery
       | null) ?? null;
 
-  /* extract PLZ + city from cached label */
-  const parsed = form.cityOrPostal.match(/^\\s*(\\d{4,5})\\s+(.+?)\\s*$/);
-  const [plz,  setPlz]  = useState(parsed ? parsed[1] : "");
+  /* extract PLZ + city from cached label (if available) */
+  const parsed = form.cityOrPostal.match(/^\s*(\d{4,5})\s+(.+?)\s*$/);
+  const [plz, setPlz] = useState(parsed ? parsed[1] : "");
   const [city, setCity] = useState(parsed ? parsed[2] : "");
 
+  /* ------------------------------------------------------------------ */
+  /*  NEW:  reset street + number whenever plz OR city actually changes */
+  /* ------------------------------------------------------------------ */
+  const prevPlz = useRef(plz);
+  const prevCity = useRef(city);
+
+  useEffect(() => {
+    if (prevPlz.current !== plz || prevCity.current !== city) {
+      setForm(f => ({ ...f, street: "", number: "" }));
+      prevPlz.current = plz;
+      prevCity.current = city;
+    }
+  }, [plz, city]);
+
+  /* suggestions + validation ----------------------------------------- */
   const plzCitySugg = usePlzSuggestions(form.cityOrPostal);
-  const streetSugg  = useStreetSuggestions(form.street, plz, city);
+  const streetSugg = useStreetSuggestions(form.street, plz, city);
 
   const validPlzCity = useMemo(() => {
     if (!form.cityOrPostal.trim()) return false;
@@ -62,9 +79,9 @@ export default function Sidebar({ onSearch }: Props) {
   }, [form.street, streetSugg, cached]);
 
   const validNumber = form.number.trim() !== "";
-  const formValid   = validPlzCity && validStreet && validNumber;
+  const formValid = validPlzCity && validStreet && validNumber;
 
-  /* submit */
+  /* submit ------------------------------------------------------------ */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formValid) return;
@@ -72,8 +89,8 @@ export default function Sidebar({ onSearch }: Props) {
     const clean: SearchQuery = {
       ...form,
       cityOrPostal: form.cityOrPostal.trim(),
-      street:       form.street.trim(),
-      number:       form.number.trim(),
+      street: form.street.trim(),
+      number: form.number.trim(),
     };
     localStorage.setItem("lastSearch", JSON.stringify(clean));
     onSearch(clean);
@@ -91,7 +108,7 @@ export default function Sidebar({ onSearch }: Props) {
     });
   };
 
-  /* render */
+  /* render ------------------------------------------------------------ */
   return (
     <aside className="w-80 shrink-0 bg-base-200 p-5 flex flex-col shadow-xl">
       <h2 className="text-2xl font-semibold mb-6">Address</h2>
@@ -101,7 +118,10 @@ export default function Sidebar({ onSearch }: Props) {
           <PlzCityAutocomplete
             value={form.cityOrPostal}
             onChange={v => setForm(f => ({ ...f, cityOrPostal: v }))}
-            onSelect={(p, c) => { setPlz(p); setCity(c); }}
+            onSelect={(p, c) => {
+              setPlz(p);
+              setCity(c);
+            }}
           />
 
           <div className="flex gap-2">
@@ -120,24 +140,29 @@ export default function Sidebar({ onSearch }: Props) {
               onChange={e => setForm(f => ({ ...f, number: e.target.value }))}
               type="number"
               placeholder="Nr"
-              className={`input input-bordered w-24 ${!validNumber ? "input-error" : ""}`}
+              className={`input input-bordered w-24 ${
+                !validNumber ? "input-error" : ""
+              }`}
               disabled={!validStreet}
             />
           </div>
 
           {!validNumber && (
-            <p className="label-text-alt text-error -mt-3">
+            <p className="label-text-alt text-default mt-3">
               Please enter a valid house number
             </p>
           )}
         </div>
 
-        {/* filters */}
+        {/* filters  */}
         <h2 className="text-2xl font-semibold mb-6">Filters</h2>
 
         <div className="grid grid-cols-2 gap-3 mb-7">
           {CONNECTION_OPTIONS.map(type => (
-            <label key={type} className="flex items-center gap-2 cursor-pointer">
+            <label
+              key={type}
+              className="flex items-center gap-2 cursor-pointer"
+            >
               <input
                 type="checkbox"
                 className="checkbox checkbox-sm checkbox-primary"
@@ -149,11 +174,13 @@ export default function Sidebar({ onSearch }: Props) {
           ))}
         </div>
 
-        {/* max-price slider */}
+        {/* max-price slider*/}
         <div className="mb-7 space-y-4">
           <label className="label">
             <span className="label-text">Max price (€)</span>
-            <span className="label-text-alt font-semibold">{form.maxPrice}</span>
+            <span className="label-text-alt font-semibold">
+              {form.maxPrice}
+            </span>
           </label>
           <input
             name="maxPrice"
@@ -163,7 +190,8 @@ export default function Sidebar({ onSearch }: Props) {
             step="1"
             value={form.maxPrice}
             onChange={e =>
-              setForm(f => ({ ...f, maxPrice: Number(e.target.value) }))}
+              setForm(f => ({ ...f, maxPrice: Number(e.target.value) }))
+            }
             className="range range-primary"
           />
           <div className="w-full flex justify-between text-xs px-2 opacity-50">
@@ -173,7 +201,7 @@ export default function Sidebar({ onSearch }: Props) {
           </div>
         </div>
 
-        {/* Additional services (unverändert) */}
+        {/* additional services (unchanged) ------------------------------ */}
         <div className="grid grid-cols-1 gap-5 mb-6">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -181,7 +209,8 @@ export default function Sidebar({ onSearch }: Props) {
               className="checkbox checkbox-sm checkbox-primary"
               checked={form.includeTV}
               onChange={() =>
-                setForm(f => ({ ...f, includeTV: !f.includeTV }))}
+                setForm(f => ({ ...f, includeTV: !f.includeTV }))
+              }
             />
             <span className="label-text">Include TV Connection</span>
           </label>
@@ -194,7 +223,8 @@ export default function Sidebar({ onSearch }: Props) {
                 setForm(f => ({
                   ...f,
                   installationService: !f.installationService,
-                }))}
+                }))
+              }
             />
             <span className="label-text">Installation Service</span>
           </label>

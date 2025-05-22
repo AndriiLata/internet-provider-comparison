@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PlzCityAutocomplete from "../components/autocomplition/PlzCityAutocomplete";
 import StreetAutocomplete from "../components/autocomplition/StreetAutocomplete";
@@ -6,6 +6,7 @@ import { usePlzSuggestions } from "../hooks/usePlzSuggestions";
 import { useStreetSuggestions } from "../hooks/useStreetSuggestions";
 import type { SearchQuery } from "../components/Sidebar";
 
+/* ---------- initial / cached query ---------------------------------- */
 const EMPTY_QUERY: SearchQuery = {
   cityOrPostal: "",
   street: "",
@@ -17,7 +18,6 @@ const EMPTY_QUERY: SearchQuery = {
 };
 
 export default function LandingPage() {
-  /* cached form --------------------------------------------------------- */
   const cached =
     (JSON.parse(localStorage.getItem("lastSearch") || "null") as
       | SearchQuery
@@ -25,16 +25,30 @@ export default function LandingPage() {
 
   const [form, setForm] = useState<SearchQuery>(cached);
 
-  /* parse plz & city from the cached “80331 München”   */
-  const parsed = cached.cityOrPostal.match(/^\\s*(\\d{4,5})\\s+(.+?)\\s*$/);
-  const [plz,  setPlz ] = useState(parsed ? parsed[1] : "");
+  /* parse PLZ + city from cached “80331 München” */
+  const parsed = cached.cityOrPostal.match(/^\s*(\d{4,5})\s+(.+?)\s*$/);
+  const [plz, setPlz] = useState(parsed ? parsed[1] : "");
   const [city, setCity] = useState(parsed ? parsed[2] : "");
 
   const navigate = useNavigate();
 
-  /* validation ---------------------------------------------------------- */
+  /* ------------------------------------------------------------------ */
+  /*  NEW:  reset street + number whenever plz OR city actually changes */
+  /* ------------------------------------------------------------------ */
+  const prevPlz = useRef(plz);
+  const prevCity = useRef(city);
+
+  useEffect(() => {
+    if (prevPlz.current !== plz || prevCity.current !== city) {
+      setForm(f => ({ ...f, street: "", number: "" }));
+      prevPlz.current = plz;
+      prevCity.current = city;
+    }
+  }, [plz, city]);
+
+  /* validation -------------------------------------------------------- */
   const plzCitySugg = usePlzSuggestions(form.cityOrPostal);
-  const streetSugg  = useStreetSuggestions(form.street, plz, city);
+  const streetSugg = useStreetSuggestions(form.street, plz, city);
 
   const validPlzCity = useMemo(() => {
     if (!form.cityOrPostal.trim()) return false;
@@ -49,9 +63,9 @@ export default function LandingPage() {
   }, [form.street, streetSugg, cached]);
 
   const validNumber = form.number.trim() !== "";
-  const formValid   = validPlzCity && validStreet && validNumber;
+  const formValid = validPlzCity && validStreet && validNumber;
 
-  /* submit -------------------------------------------------------------- */
+  /* submit ------------------------------------------------------------ */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formValid) return;
@@ -59,14 +73,14 @@ export default function LandingPage() {
     const clean: SearchQuery = {
       ...form,
       cityOrPostal: form.cityOrPostal.trim(),
-      street:       form.street.trim(),
-      number:       form.number.trim(),
+      street: form.street.trim(),
+      number: form.number.trim(),
     };
     localStorage.setItem("lastSearch", JSON.stringify(clean));
     navigate("/search", { state: { query: clean } });
   };
 
-  /* UI ------------------------------------------------------------------ */
+  /* UI ---------------------------------------------------------------- */
   return (
     <section className="hero min-h-screen bg-gradient-to-br from-sky-600 via-blue-400 to-yellow-300">
       <div className="hero-overlay bg-opacity-70" />
@@ -90,7 +104,10 @@ export default function LandingPage() {
               <PlzCityAutocomplete
                 value={form.cityOrPostal}
                 onChange={v => setForm(f => ({ ...f, cityOrPostal: v }))}
-                onSelect={(p, c) => { setPlz(p); setCity(c); }}
+                onSelect={(p, c) => {
+                  setPlz(p);
+                  setCity(c);
+                }}
               />
 
               <div className="flex gap-4">
@@ -106,9 +123,13 @@ export default function LandingPage() {
                   type="number"
                   placeholder="Nr"
                   value={form.number}
-                  onChange={e => setForm(f => ({ ...f, number: e.target.value }))}
-                  className={`input input-bordered w-24 ${!validNumber}`}
-                  disabled={!validPlzCity}
+                  onChange={e =>
+                    setForm(f => ({ ...f, number: e.target.value }))
+                  }
+                  className={`input input-bordered w-24 ${
+                    !validNumber ? "input-error" : ""
+                  }`}
+                  disabled={!validStreet}
                 />
               </div>
             </div>
@@ -124,7 +145,7 @@ export default function LandingPage() {
           </div>
 
           {!formValid && (
-            <p className="text-error text-sm text-center mt-4">
+            <p className="text-default text-sm text-center mt-4">
               Please complete all address fields correctly to continue
             </p>
           )}
