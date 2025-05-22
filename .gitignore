@@ -33,7 +33,7 @@ build/
 .vscode/
 
 application.yml
-
+.env
 application-dev.ymlbackend/target/
 
 # --- Front-end ---

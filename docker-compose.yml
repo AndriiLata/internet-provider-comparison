@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  # ────────────────────────────
+  # PostgreSQL
+  # ────────────────────────────
+  db:
+    image: postgres:16
+    env_file: .env                 # ⬅︎ picks up POSTGRES_* variables
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # ────────────────────────────
+  # Spring-Boot backend
+  # ────────────────────────────
+  backend:
+    build: ./backend               # uses backend/Dockerfile
+    env_file: .env                 # ⬅︎ injects DB creds + provider secrets
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+
+  # ────────────────────────────
+  # Vite/React frontend
+  # ────────────────────────────
+  frontend:
+    build: ./frontend              # uses frontend/Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"                  # keep 5173 so your React code’s CORS stays valid
+
+volumes:
+  pgdata:
