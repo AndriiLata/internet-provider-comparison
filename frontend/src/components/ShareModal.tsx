@@ -1,30 +1,12 @@
 type ShareModalProps = {
-  /** Controls visibility of the modal */
+  // visibility of the modal
   isOpen: boolean;
-  /** URL that will be shared + copied */
+  // what to share
   shareUrl: string;
-  /** Called when user closes the modal (or clicks outside) */
+  // when user closes the modal
   onClose: () => void;
 };
 
-/**
- * Re‑usable share‑link modal component.
- *
- * Inspired by DaisyUI’s modal markup but polished with
- * rounded corners, better spacing, and a sticky close button.
- *
- * Usage example:
- * ```tsx
- * const [modalOpen, setModalOpen] = useState(false);
- * const [shareUrl, setShareUrl] = useState("https://example.com");
- *
- * <ShareModal
- *   isOpen={modalOpen}
- *   shareUrl={shareUrl}
- *   onClose={() => setModalOpen(false)}
- * />
- * ```
- */
 export default function ShareModal({ isOpen, shareUrl, onClose }: ShareModalProps) {
   if (!isOpen) return null;
 

@@ -1,7 +1,6 @@
-// src/components/Topbar.tsx
 import { useEffect, useState } from "react";
 
-/** Tailwind/daisyUI v5 theme names */
+
 const THEMES = [
   { id: "light",     label: "Default" },
   { id: "night",     label: "Night" },
@@ -14,8 +13,7 @@ export default function Topbar() {
   );
 
   useEffect(() => {
-    // daisyUI’s <input class="theme-controller"> sets data-theme for us,
-    // we only persist the choice:
+    // themes
     localStorage.setItem("theme", theme);
   }, [theme]);
 

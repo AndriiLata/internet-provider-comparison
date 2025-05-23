@@ -1,4 +1,4 @@
-import OfferCard from "./OfferCard";
+import OfferCard from "./offercard/OfferCard";
 import type { OfferResponseDto } from "../types/offer";
 
 interface Props {

@@ -1,13 +1,13 @@
 import { fetchEventSource, type EventSourceMessage } from "@microsoft/fetch-event-source";
 import type { OfferResponseDto, SearchCriteria } from "../types/offer";
 
-/** Open POST-SSE for a search; returns the AbortController. */
+// Open POST-SSE for a search; returns the AbortController
 export function streamOffers(
   criteria:   SearchCriteria,
   onId:       (id: string)               => void,
   onOffer:    (o:  OfferResponseDto)     => void,
   onError:    (e: unknown)               => void,
-  onClose:    ()                         => void,   // 🔸 new
+  onClose:    ()                         => void,   
 ) {
   const ctrl = new AbortController();
 
@@ -18,7 +18,7 @@ export function streamOffers(
     signal:  ctrl.signal,
 
     onopen:  async () => {},               // must return Promise<void>
-    onclose: () => { onClose(); },         // 🔸 notify hook
+    onclose: () => { onClose(); },         // notify hook
     onerror: e  => { onError(e); },
 
     onmessage(msg: EventSourceMessage) {
@@ -33,7 +33,7 @@ export function streamOffers(
   return ctrl;
 }
 
-/** Fetch full list for an existing share-ID. */
+// Fetch full list for an existing share-ID
 export async function fetchOffersForSession(id: string) {
   const r = await fetch(`/api/offers/session/${id}`);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);

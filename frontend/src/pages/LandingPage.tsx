@@ -25,16 +25,13 @@ export default function LandingPage() {
 
   const [form, setForm] = useState<SearchQuery>(cached);
 
-  /* parse PLZ + city from cached “80331 München” */
+  // parse PLZ + city from cached example: “80331 München”
   const parsed = cached.cityOrPostal.match(/^\s*(\d{4,5})\s+(.+?)\s*$/);
   const [plz, setPlz] = useState(parsed ? parsed[1] : "");
   const [city, setCity] = useState(parsed ? parsed[2] : "");
 
   const navigate = useNavigate();
 
-  /* ------------------------------------------------------------------ */
-  /*  NEW:  reset street + number whenever plz OR city actually changes */
-  /* ------------------------------------------------------------------ */
   const prevPlz = useRef(plz);
   const prevCity = useRef(city);
 
@@ -46,7 +43,7 @@ export default function LandingPage() {
     }
   }, [plz, city]);
 
-  /* validation -------------------------------------------------------- */
+  // validation
   const plzCitySugg = usePlzSuggestions(form.cityOrPostal);
   const streetSugg = useStreetSuggestions(form.street, plz, city);
 
@@ -65,7 +62,7 @@ export default function LandingPage() {
   const validNumber = form.number.trim() !== "";
   const formValid = validPlzCity && validStreet && validNumber;
 
-  /* submit ------------------------------------------------------------ */
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formValid) return;
@@ -80,7 +77,7 @@ export default function LandingPage() {
     navigate("/search", { state: { query: clean } });
   };
 
-  /* UI ---------------------------------------------------------------- */
+  
   return (
     <section className="hero min-h-screen bg-gradient-to-br from-sky-600 via-blue-400 to-yellow-300">
       <div className="hero-overlay bg-opacity-70" />

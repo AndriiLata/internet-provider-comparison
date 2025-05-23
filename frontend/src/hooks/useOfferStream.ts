@@ -22,7 +22,7 @@ export function useOfferStream(
   const bufferRef = useRef<OfferResponseDto[]>(initial);
 
   useEffect(() => {
-    /* cancel previous stream */
+    // cancel previous request!!
     ctrlRef.current?.abort();
 
     if (!criteria) return;

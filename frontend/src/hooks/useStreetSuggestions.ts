@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
-/**(Straßenname ohne Hausnummer) */
+// Street names without numbers
 export interface StreetSuggestion {
   street: string;
 }
 
 const ENDPOINT = "https://photon.komoot.io/api";
 
-/* 
- *  Normalise city names so "a.d." == "an der", etc.            
-*/
+// Normalise city names so "a.d." == "an der", etc.            
 function normaliseCity(raw: string): string {
   return raw
     .toLowerCase()
@@ -23,9 +21,7 @@ function normaliseCity(raw: string): string {
     .trim();
 }
 
-/**
- * Straßen-Vorschläge, die zu `plz` oder `city` passen
- */
+
 export function useStreetSuggestions(
   streetQuery: string,
   plz: string,
@@ -35,8 +31,8 @@ export function useStreetSuggestions(
   const [data, setData] = useState<StreetSuggestion[]>([]);
   const abort = useRef<AbortController | null>(null);
 
-  /* city part before first comma, e.g. "Rottenburg a.d. Laaber"*/
-  const mainCity = city.split(",")[0].trim();          // may be ""
+  // city part before first comma, e.g. "Rottenburg a.d. Laaber"
+  const mainCity = city.split(",")[0].trim();          
   const normMain = mainCity ? normaliseCity(mainCity) : "";
 
   useEffect(() => {
@@ -67,7 +63,7 @@ export function useStreetSuggestions(
 
           const streets = (json.features as any[])
             .filter(f => {
-              /* postcode must always match */
+              // postcode must always match
               if (f.properties?.postcode !== plz) return false;
 
               

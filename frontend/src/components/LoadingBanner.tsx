@@ -1,4 +1,3 @@
-// src/components/LoadingBanner.tsx
 import { useState, useEffect } from "react";
 import type { OfferResponseDto } from "../types/offer";
 
@@ -6,7 +5,7 @@ interface Props {
   offers: OfferResponseDto[];
 }
 
-// the 5 providers you know about
+// providers we expect to get offers from
 const expectedProviders = [
   { key: "ping", label: "Ping Perfect" },
   { key: "byte", label: "Byte Me" },
@@ -16,7 +15,7 @@ const expectedProviders = [
 ];
 
 export default function LoadingBanner({ offers }: Props) {
-  // which ones are still pending
+  // which providers are still pending
   const pending = expectedProviders.filter(
     ({ key }) =>
       !offers.some((o) =>

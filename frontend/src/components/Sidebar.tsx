@@ -20,7 +20,7 @@ const DEFAULT_FORM: SearchQuery = {
   street: "",
   number: "",
   connectionTypes: [],
-  maxPrice: 60,
+  maxPrice: 80,
   includeTV: false,
   installationService: false,
 };
@@ -31,7 +31,6 @@ interface Props {
 
 const CONNECTION_OPTIONS = ["DSL", "FIBER", "MOBILE", "CABLE"];
 
-/* ---------- component ---------- */
 export default function Sidebar({ onSearch }: Props) {
   const [form, setForm] = useState<SearchQuery>(() => {
     const saved = localStorage.getItem("lastSearch");
@@ -43,14 +42,12 @@ export default function Sidebar({ onSearch }: Props) {
       | SearchQuery
       | null) ?? null;
 
-  /* extract PLZ + city from cached label (if available) */
+  // extract PLZ + city from cached label (if available)
   const parsed = form.cityOrPostal.match(/^\s*(\d{4,5})\s+(.+?)\s*$/);
   const [plz, setPlz] = useState(parsed ? parsed[1] : "");
   const [city, setCity] = useState(parsed ? parsed[2] : "");
 
-  /* ------------------------------------------------------------------ */
-  /*  NEW:  reset street + number whenever plz OR city actually changes */
-  /* ------------------------------------------------------------------ */
+// reset street + number when PLZ or city changes
   const prevPlz = useRef(plz);
   const prevCity = useRef(city);
 
@@ -62,7 +59,7 @@ export default function Sidebar({ onSearch }: Props) {
     }
   }, [plz, city]);
 
-  /* suggestions + validation ----------------------------------------- */
+  // suggestions and validation
   const plzCitySugg = usePlzSuggestions(form.cityOrPostal);
   const streetSugg = useStreetSuggestions(form.street, plz, city);
 
@@ -81,7 +78,7 @@ export default function Sidebar({ onSearch }: Props) {
   const validNumber = form.number.trim() !== "";
   const formValid = validPlzCity && validStreet && validNumber;
 
-  /* submit ------------------------------------------------------------ */
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formValid) return;
@@ -108,7 +105,7 @@ export default function Sidebar({ onSearch }: Props) {
     });
   };
 
-  /* render ------------------------------------------------------------ */
+  
   return (
     <aside className="w-80 shrink-0 bg-base-200 p-5 flex flex-col shadow-xl">
       <h2 className="text-2xl font-semibold mb-6">Address</h2>
@@ -201,7 +198,7 @@ export default function Sidebar({ onSearch }: Props) {
           </div>
         </div>
 
-        {/* additional services (unchanged) ------------------------------ */}
+        {/* additional services */}
         <div className="grid grid-cols-1 gap-5 mb-6">
           <label className="flex items-center gap-2 cursor-pointer">
             <input

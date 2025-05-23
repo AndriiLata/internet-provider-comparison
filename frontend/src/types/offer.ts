@@ -1,16 +1,14 @@
-/* ----------  UI DTO matching the new backend  ---------- */
-
 export interface OfferResponseDto {
   productId: string;
   provider: string;
   contractInfo: ContractInfo;
   costInfo: CostInfo;
   tvInfo: TvInfo;
-  /** average user rating 0‒5 – supplied by backend */
+  // avg user rating
   averageRating: number;
 }
   
-  /* …nested records … */
+  // nested records
   export interface ContractInfo {
     connectionType: string;
     speed: number;                       // Mbit/s
@@ -33,7 +31,7 @@ export interface OfferResponseDto {
     tvBrand?: string | null;
   }
   
-  /* ---------- search ---------- */
+  // search criteria
   
   export interface SearchCriteria {
     street: string;
@@ -56,7 +54,7 @@ export interface OfferResponseDto {
     installationService: boolean;
   }
   
-  /* helper ----------------------------------------------------------------- */
+  // helpers
   function splitCityPostal(raw: string): { city: string; postalCode: string } {
     const trimmed = raw.trim();
     const m = trimmed.match(/(\d{5})/);           // first 5-digit number
@@ -72,7 +70,7 @@ export interface OfferResponseDto {
     return { city, postalCode: postal };
   }
   
-  /** turn form state into API DTO */
+  
   export function toCriteria(q: SearchQuery): SearchCriteria {
     const { city, postalCode } = splitCityPostal(q.cityOrPostal);
   

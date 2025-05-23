@@ -7,7 +7,7 @@ import {
 interface Props {
   value: string;
   onChange: (val: string) => void;
-  /** fires when user picks a suggestion */
+  // fires when user selects a suggestion
   onSelect: (plz: string, city: string) => void;
   className?: string;
 }
@@ -21,19 +21,18 @@ export default function PlzCityAutocomplete({
   const [open, setOpen]   = useState(false);
   const [error, setError] = useState(false);
 
-  /** last value we accepted as definitely valid */
-  const [valid, setValid] = useState<string>(value); // <- accept cached value
+  const [valid, setValid] = useState<string>(value); // accept cached value
 
   const suggs = usePlzSuggestions(value);
 
-  /* user typing */
+  // user typing
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(false);
     onChange(e.target.value);
     setOpen(true);
   };
 
-  /* user picks from list */
+  // user picks a suggestion
   const pick = (s: PlzSuggestion) => {
     onChange(s.label);
     setValid(s.label);
@@ -42,7 +41,7 @@ export default function PlzCityAutocomplete({
     onSelect(s.plz, s.city);
   };
 
-  /* on blur: verify value */
+  
   const handleBlur = () => {
     setTimeout(() => {
       setOpen(false);
