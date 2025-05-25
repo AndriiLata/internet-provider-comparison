@@ -6,7 +6,7 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.4.4</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
 	<groupId>com.example</groupId>
 	<artifactId>demo</artifactId>
@@ -34,7 +34,7 @@
 		<dependency>
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-bom</artifactId>
-			<version>2024.0.2</version>   <!-- core 3.7.2  +  extra 3.5.2 -->
+			<version>2024.0.2</version>
 			<type>pom</type>
 			<scope>import</scope>
 		</dependency>
@@ -78,19 +78,16 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-xml</artifactId>
-			<!-- no <version> needed – Spring‑Boot 3.4.x manages the right one for you
-                 (today that’s 2.18.3, see the Boot BOM) – keep it blank so you
-                 automatically upgrade when you bump Boot.          :contentReference[oaicite:0]{index=0} -->
+
 		</dependency>
 
 		<!-- 2.  Extra Reactor operators & Scheduler helpers (used by WebWunderClientImpl) -->
 		<dependency>
 			<groupId>io.projectreactor.addons</groupId>
 			<artifactId>reactor-extra</artifactId>
-			<version>3.5.2</version>          <!-- latest stable 3.x :contentReference[oaicite:1]{index=1} -->
+			<version>3.5.2</version>
 		</dependency>
 
-		<!-- End WebWunder changes -->
 
 		<!-- For servusspeed caching  -->
 		<dependency>
@@ -98,7 +95,7 @@
 			<artifactId>caffeine</artifactId>
 		</dependency>
 
-		<!-- ③ CacheMono / CacheFlux helper utilities -->
+		<!-- CacheMono / CacheFlux helper utilities -->
 		<dependency>
 			<groupId>io.projectreactor.addons</groupId>
 			<artifactId>reactor-extra</artifactId>

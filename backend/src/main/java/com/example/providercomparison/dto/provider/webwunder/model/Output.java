@@ -30,8 +30,7 @@ public record Output(
 
 
 
-    /** WebWunder sometimes sends a percentage voucher, sometimes an absolute one.
-     *  Jackson just fills whichever fields exist. */
+    // WebWunder sometimes sends a percentage voucher, sometimes an absolute one -> Jackson just fills whichever fields exist
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Voucher(
             @JacksonXmlProperty(namespace = Ns.URL) Integer percentage,

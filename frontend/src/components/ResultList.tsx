@@ -7,7 +7,7 @@ interface Props {
 
 export default function ResultsList({ offers }: Props) {
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto pr-2">
+    <div className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-4 px-4">
       {offers.length === 0 ? (
         <p className="opacity-70">
           No offers yet – start by entering your address 👆

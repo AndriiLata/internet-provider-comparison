@@ -6,9 +6,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
-/**
- * Client interface for ServusSpeed API
- */
+
 public interface ServusSpeedClient {
     Mono<List<String>> getAvailableProducts(SearchCriteria criteria);
     Mono<DetailedResponseData> getProductDetails   (String productId,

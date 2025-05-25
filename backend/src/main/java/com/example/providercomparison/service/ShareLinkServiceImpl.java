@@ -50,7 +50,7 @@ public class ShareLinkServiceImpl implements ShareLinkService {
                 .map(ent -> readJson(ent.getOffer(), OfferResponseDto.class));
     }
 
-    /* ---------- helpers ---------- */
+    // helpers
 
     private Json writeJsonAsJsonb(Object o) {
         try { return Json.of(mapper.writeValueAsString(o)); }

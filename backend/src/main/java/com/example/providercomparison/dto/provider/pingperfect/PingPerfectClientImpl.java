@@ -30,7 +30,7 @@ public class PingPerfectClientImpl implements PingPerfectClient {
     @Override
     public Flux<InternetProduct> getProducts(SearchCriteria c) {
         return Flux.defer(() -> {
-            // 1) build & sign payload on each subscription
+            // build & sign payload on each subscription
             CompareProductsRequestData payload = new CompareProductsRequestData(
                     c.street(),
                     c.postalCode(),
@@ -49,7 +49,7 @@ public class PingPerfectClientImpl implements PingPerfectClient {
             }
             var headers = signer.sign(json);
 
-            // 2) perform request, with explicit 4xx vs 5xx handling
+            // perform request, with explicit 4xx vs 5xx handling
             return pingPerfectWebClient.post()
                     .uri("/internet/angebote/data")
                     .contentType(MediaType.APPLICATION_JSON)

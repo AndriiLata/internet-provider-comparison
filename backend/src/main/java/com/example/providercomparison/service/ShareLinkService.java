@@ -9,12 +9,12 @@ import java.util.UUID;
 
 public interface ShareLinkService {
 
-    /** create DB row & return the generated UUID */
+    // create DB row & return the generated UUID
     Mono<UUID> createSession(SearchCriteria criteria);
 
-    /** persists every offer but leaves the original Flux unmodified */
+    // persists every offer but leaves the original Flux unmodified
     Flux<OfferResponseDto> saveOffers(UUID sessionId, Flux<OfferResponseDto> offers);
 
-    /** lazy-load all offers stored for that session */
+    // lazy-load all offers stored for that session
     Flux<OfferResponseDto> offersForSession(UUID sessionId);
 }

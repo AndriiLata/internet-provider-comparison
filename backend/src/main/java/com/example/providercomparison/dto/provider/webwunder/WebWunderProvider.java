@@ -26,11 +26,11 @@ public class WebWunderProvider implements OfferProvider {
     @Override
     public Flux<OfferResponseDto> offers(SearchCriteria criteria) {
 
-        /* 1 ─ decide which connectionEnums to request */
+        // decide which connectionEnums to request
         List<LegacyGetInternetOffers.ConnectionType> types =
-                mapTypes(criteria.connectionTypes());                     // ← changed
+                mapTypes(criteria.connectionTypes());
 
-        /* 2 ─ call WebWunder once per type and merge the fluxes */
+        // call WebWunder once per type and merge the fluxes
         return Flux.merge(
                 types.stream().map(t ->
                         client.fetchOffers(mapper.from(criteria, t))
@@ -42,8 +42,8 @@ public class WebWunderProvider implements OfferProvider {
         );
     }
 
-    /* helper: empty/null → all four, otherwise parse every selected string */
-    private static List<LegacyGetInternetOffers.ConnectionType> mapTypes(List<String> sel) {   // ← changed
+
+    private static List<LegacyGetInternetOffers.ConnectionType> mapTypes(List<String> sel) {
         if (sel == null || sel.isEmpty()) {
             return List.of(LegacyGetInternetOffers.ConnectionType.values());
         }
@@ -63,7 +63,7 @@ public class WebWunderProvider implements OfferProvider {
                 .distinct()
                 .toList();
 
-        /* if nothing valid remained, fall back to “all” */
+        // if nothing valid remained, fall back to “all”
         return parsed.isEmpty()
                 ? List.of(LegacyGetInternetOffers.ConnectionType.values())
                 : parsed;

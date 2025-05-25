@@ -56,7 +56,7 @@ export default function OfferCard({ offer }: { offer: OfferResponseDto }) {
 
   return (
     <>
-      <div className="card bg-base-100 shadow-md hover:shadow-xl transition duration-300">
+      <div className="card bg-base-100 shadow-lg hover:shadow-xl transition duration-300">
         <div className="card-body p-4 flex flex-row items-center gap-6">
           {/* provider column */}
           <div className="flex flex-col items-center gap-2 w-32 shrink-0">

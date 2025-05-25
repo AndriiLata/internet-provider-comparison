@@ -52,7 +52,7 @@ class WebWunderClientImpl implements WebWunderClient {
                 .uri(endpoint)
                 .contentType(MediaType.TEXT_XML)
                 .header("X-Api-Key", apiKey)
-                .header("SOAPAction", "\"legacyGetInternetOffers\"")   // 👈 usually required
+                .header("SOAPAction", "\"legacyGetInternetOffers\"")
                 .bodyValue(soapBody)
                 .exchangeToMono(resp ->
                         resp.bodyToMono(String.class)
@@ -65,7 +65,7 @@ class WebWunderClientImpl implements WebWunderClient {
 
 
 
-    /* ---------------- small helpers ---------------- */
+    // helpers
 
     private String wrapInEnvelope(String body) {
         return """
@@ -125,15 +125,14 @@ class WebWunderClientImpl implements WebWunderClient {
         return false;
     }
 
-    /* 2.  pre‑built Retry spec: max 4 retries (⇒ 5 attempts) */
+    //  pre‑built Retry spec: max 4 retries (5 attempts)
     private static final Retry TRANSIENT_RETRY =
-            Retry.backoff(4, Duration.ofSeconds(1))   // 1,2,4,8 s
+            Retry.backoff(4, Duration.ofSeconds(1))
                     .jitter(0.3)
                     .filter(WebWunderClientImpl::isTransient)
                     .onRetryExhaustedThrow((spec, sig) -> sig.failure());
 
 
-    /** unchecked but rich with info */
     public static final class WebWunderException extends RuntimeException {
         final HttpStatus status;
         WebWunderException(HttpStatus status, String body) {

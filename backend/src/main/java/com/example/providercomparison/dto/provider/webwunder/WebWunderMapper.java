@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 @Component
 class WebWunderMapper {
 
-    /* UI ➟ SOAP (unchanged) */
+
     LegacyGetInternetOffers from(SearchCriteria c,
                                  LegacyGetInternetOffers.ConnectionType connection) {
         return new LegacyGetInternetOffers(
@@ -30,7 +30,6 @@ class WebWunderMapper {
         );
     }
 
-    /* SOAP ➟ UI (nested DTO, with maxDiscountInCent) */
     List<OfferResponseDto> toDtos(Output output) {
         if (output.products() == null || output.products().isEmpty()) {
             return List.of();
@@ -54,18 +53,17 @@ class WebWunderMapper {
                             null                           // maxAge (not used)
                     );
 
-                    // --- Base costs ---
+                    // base cost
                     int monthlyCost = info.monthlyCostInCent();
                     Integer monthlyCostAfter24 = info.monthlyCostInCentFrom25thMonth() == 0
                             ? null
                             : info.monthlyCostInCentFrom25thMonth();
 
-                    // --- Voucher parsing ---
                     Output.Voucher v = info.voucher();
                     String voucherType = null;
                     Integer rawVoucher = null;   // as delivered by provider
-                    int computedDiscount = 0;      // discount *before* any cap
-                    int declaredMaxDiscount = 0;      // cap *before* any prorating
+                    int computedDiscount = 0;      // discount before any cap
+                    int declaredMaxDiscount = 0;      // cap before any prorating
 
                     if (v != null) {
                         // declared maximum discount cap
@@ -97,13 +95,13 @@ class WebWunderMapper {
                         }
                     }
 
-                    // --- Monthly prices after discount ---
+                    // Monthly prices after discount
                     int discountedMonthly = monthlyCost - discountInCent;
                     Integer monthlyDiscountValue = (voucherType == null)
                             ? null
                             : discountInCent;
 
-                    // --- CostInfo ---
+                    // CostInfo
                     OfferResponseDto.CostInfo cost = new OfferResponseDto.CostInfo(
                             discountedMonthly,                 // discountedMonthlyCostInCent
                             monthlyCost,                       // monthlyCostInCent
@@ -115,10 +113,9 @@ class WebWunderMapper {
                             true                               // installationService
                     );
 
-                    // --- TvInfo (none on WebWunder) ---
+                    // Webwunder doesnt have TV info
                     OfferResponseDto.TvInfo tv = new OfferResponseDto.TvInfo(false, "");
 
-                    // --- Assemble final DTO ---
                     return new OfferResponseDto(
                             String.valueOf(p.productId()),
                             p.providerName(),

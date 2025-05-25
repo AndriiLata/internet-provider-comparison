@@ -75,7 +75,12 @@ export default function Sidebar({ onSearch }: Props) {
     return cached?.street === form.street;
   }, [form.street, streetSugg, cached]);
 
-  const validNumber = form.number.trim() !== "";
+  const validNumber = useMemo(() => {
+    const n = Number(form.number);
+    // must be an integer, ≥1 and ≤200
+    return Number.isInteger(n) && n >= 1 && n <= 200;
+  }, [form.number]);
+  
   const formValid = validPlzCity && validStreet && validNumber;
 
   
@@ -133,10 +138,12 @@ export default function Sidebar({ onSearch }: Props) {
 
             <input
               name="number"
+              type="number"
+              min={1}
+              max={200}
+              placeholder="Nr"
               value={form.number}
               onChange={e => setForm(f => ({ ...f, number: e.target.value }))}
-              type="number"
-              placeholder="Nr"
               className={`input input-bordered w-24 ${
                 !validNumber ? "input-error" : ""
               }`}

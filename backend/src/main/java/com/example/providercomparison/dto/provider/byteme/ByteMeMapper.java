@@ -8,13 +8,13 @@ import org.springframework.stereotype.Component;
 public class ByteMeMapper {
 
     public OfferResponseDto toDto(ByteMeCsvOffer o) {
-        // 1) clean provider name
+        // clean provider name
         String title = o.providerName() == null
                 ? null
                 : o.providerName().split(",", 2)[0].trim();
 
-        // 2) build ContractInfo, defaulting any null Integer → 0
-        int contractDuration = Math.max(1, o.durationInMonths());          // ❶ guard against 0
+        // build ContractInfo, defaulting any null Integer → 0
+        int contractDuration = Math.max(1, o.durationInMonths());
         OfferResponseDto.ContractInfo contractInfo = new OfferResponseDto.ContractInfo(
                 o.connectionType(),
                 o.speed()      != 0 ? o.speed()      : 0,
@@ -23,25 +23,25 @@ public class ByteMeMapper {
                 o.maxAge()     != null ? o.maxAge()     : null
         );
 
-        // 3) compute the per-month voucher value (prorate if ABSOLUTE)
+        // compute the per-month voucher value (prorate if ABSOLUTE)
         int voucherValue = voucherValueInCent(
                 o.voucherType(),
                 o.voucherValueInCent(),
                 o.monthlyCostInCent(),
-                contractDuration                      // ❷ new parameter
+                contractDuration
         );
 
-        // 4) build CostInfo, using voucherValue for both discount and maxDiscount
+        // build CostInfo, using voucherValue for both discount and maxDiscount
         OfferResponseDto.CostInfo costInfo = new OfferResponseDto.CostInfo(
-                /*discountedMonthlyCostInCent*/    o.monthlyCostInCent() - voucherValue,
-                /*monthlyCostInCent*/              o.monthlyCostInCent(),
-                /*monthlyCostAfter24mInCent*/      o.monthlyCostAfter24mInCent(),
-                /*monthlyDiscountValueInCent*/     voucherValue,
-                /*maxDiscountInCent*/              null,
-                /*installationService*/            o.installationService()
+    o.monthlyCostInCent() - voucherValue,
+                            o.monthlyCostInCent(),
+                            o.monthlyCostAfter24mInCent(),
+                            voucherValue,
+                             null,
+                            o.installationService()
         );
 
-        // 5) TV info (included if there's a non-blank brand)
+        // TV info
         boolean tvIncluded = o.tvBrand() != null && !o.tvBrand().isBlank();
         OfferResponseDto.TvInfo tvInfo = new OfferResponseDto.TvInfo(
                 tvIncluded,
@@ -80,7 +80,6 @@ public class ByteMeMapper {
             return monthlyCostInCent * voucherValue / 100;
         }
 
-        /* ABSOLUTE ⇒ spread over contract term */
         return voucherValue / durationInMonths;
     }
 }

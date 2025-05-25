@@ -30,9 +30,8 @@ public class VerbynDichClientImpl implements VerbynDichClient {
     }
 
 
-    /** Fetch exactly one page, or null if invalid */
+    // Fetch exactly one page, or null if invalid
     @Override
-    // in VerbynDichClientImpl
     public Mono<VerbynDichResponse> fetchRawPage(SearchCriteria criteria, int page) {
         String address = String.format("%s;%s;%s;%s",
                 criteria.street(),
@@ -52,7 +51,7 @@ public class VerbynDichClientImpl implements VerbynDichClient {
                 .bodyValue(address)
                 .retrieve()
                 .bodyToMono(VerbynDichResponse.class)
-                // ‑‑ 429 / 5xx are retried with exponential back‑off
+                // 429 / 5xx are retried with exponential back‑off
                 .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
                         .filter(this::isRetriable));
     }

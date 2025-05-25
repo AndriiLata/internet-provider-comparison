@@ -23,12 +23,7 @@ import java.util.concurrent.TimeoutException;
 public class ServusSpeedClientImpl implements ServusSpeedClient {
 
     private final WebClient web;
-
-    /**
-     * Retry 2 × with exponential back-off starting at 1 s (±20 % jitter)<br>
-     * – **always** when we get an {@code IOException} or {@code TimeoutException}<br>
-     * – **only** when the server responds with an HTTP 5xx status
-     */
+    // Retry policy: 2 attempts with exponential backoff starting at 1 second,
     private static final Retry RETRY_POLICY =
             Retry.backoff(2, Duration.ofSeconds(1))
                     .jitter(0.2)

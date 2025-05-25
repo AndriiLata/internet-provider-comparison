@@ -10,10 +10,10 @@ import java.util.regex.Pattern;
 
 public final class VerbynDichMapper {
 
-    /* ─────────── 1. unique product ids ─────────── */
+    // product ID
     private static final AtomicLong COUNTER = new AtomicLong();
 
-    /* ─────────── 2. patterns ─────────── */
+    // patterns
     private static final int FLAGS = Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
 
     private static final Pattern PRICE_PATTERN =
@@ -31,14 +31,13 @@ public final class VerbynDichMapper {
     private static final Pattern CONNECTION_PATTERN =
             Pattern.compile("erhalten\\s+Sie\\s+eine\\s+(Cable|Fiber|DSL)-Verbindung", FLAGS);
 
-    // new: extract "<Brand>" after the exact phrase
+    // tv brand
     private static final Pattern TV_BRAND_PATTERN =
             Pattern.compile(
                     "Zusätzlich\\s+sind\\s+folgende\\s+Fernsehsender\\s+enthalten\\s+([^\\.\\n]+)",
                     FLAGS
             );
-
-    // new: extract "250" from "Ab 250GB pro Monat wird die Geschwindigkeit gedrosselt"
+    // data cap limit
     private static final Pattern DATA_CAP_PATTERN =
             Pattern.compile(
                     "Ab\\s+(\\d{1,4})GB\\s+pro\\s+Monat\\s+wird\\s+die\\s+Geschwindigkeit\\s+gedrosselt",
@@ -50,29 +49,29 @@ public final class VerbynDichMapper {
     public static OfferResponseDto toDto(VerbynDichResponse resp) {
         String desc = resp.description();
 
-        // ── 1) parse basic numbers ─────────────────────
+        //  parse basic numbers
         int price    = parseInt(find(PRICE_PATTERN, desc));
         int after24  = parseInt(find(PRICE_AFTER24_PATTERN, desc));
         int speed    = parseInt(find(SPEED_PATTERN, desc));
         int duration = parseInt(find(DURATION_PATTERN, desc));
         if (after24 == 0) after24 = price;
 
-        // ── 2) extract data-cap limit (speedLimitFrom) ──
+        //  extract data-cap limit (speedLimitFrom)
         Integer dataCapLimit = parseIntNull(find(DATA_CAP_PATTERN, desc));
         // if not found, leave as 0
 
-        // ── 3) extract TV brand ────────────────────────
+        // extract TV brand
         Matcher tvMatcher = TV_BRAND_PATTERN.matcher(desc);
         boolean tvIncluded = tvMatcher.find();
         String tvBrand = tvIncluded
                 ? tvMatcher.group(1).trim()
                 : null;
 
-        // ── 4) build IDs & meta ────────────────────────
+        // "unique" product ID
         String productId = "verbyndich" + COUNTER.incrementAndGet();
         String provider  = resp.product();
 
-        // ── 5) nested DTOs ─────────────────────────────
+        //  nested DTOs
         OfferResponseDto.ContractInfo contract = new OfferResponseDto.ContractInfo(
                 find(CONNECTION_PATTERN, desc).toUpperCase(),
                 speed,
@@ -105,7 +104,7 @@ public final class VerbynDichMapper {
         );
     }
 
-    /* ──── helpers ───────────────────────────────── */
+    // helpers
     private static String find(Pattern p, String text) {
         Matcher m = p.matcher(text);
         return m.find() ? m.group(1) : "";

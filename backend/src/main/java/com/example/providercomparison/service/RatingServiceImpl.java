@@ -20,15 +20,15 @@ public class RatingServiceImpl implements RatingService {
     @Override
     public Mono<Void> saveRating(RatingRequestDto dto) {
         return repo.findByServiceNameAndEmail(dto.serviceName(), dto.email())
-                /*---------- already exists → update ----------*/
+                // check if the user has already rated this service
                 .flatMap(existing -> {
-                    existing.setUserName(dto.userName());      // in case it changed
+                    existing.setUserName(dto.userName());
                     existing.setRanking(dto.ranking());
                     existing.setComment(dto.comment());
-                    existing.setCreatedAt(LocalDateTime.now()); // optional “edited” timestamp
+                    existing.setCreatedAt(LocalDateTime.now());
                     return repo.save(existing);
                 })
-                /*---------- first rating for this service/email → insert ----------*/
+                // if this was the first rating for this service by this user
                 .switchIfEmpty(Mono.defer(() -> {
                     ServiceRating rating = new ServiceRating();
                     rating.setServiceName(dto.serviceName());
