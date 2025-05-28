@@ -1,0 +1,50 @@
+# database
+spring:
+  r2dbc:
+    pool:
+      enabled: true          # default, but be explicit
+      initial-size: 3        # pre-warm connections
+      max-size: 10
+
+      # ---- validation / timeout tweaks ----
+      max-create-connection-time: 10s   # wait for Neon to wake
+      validation-query: SELECT 1
+      validation-depth: LOCAL           # cheaper ping
+      test-on-acquire: true
+
+    url:      ${SPRING_R2DBC_URL}
+    username: ${SPRING_R2DBC_USERNAME}
+    password: ${SPRING_R2DBC_PASSWORD}
+
+  flyway:
+    url:      ${SPRING_FLYWAY_URL}
+    user:     ${SPRING_FLYWAY_USER}
+    password: ${SPRING_FLYWAY_PASSWORD}
+    locations: classpath:db/migration
+
+provider:
+  servusspeed:
+    base-url: ${SERVUSSPEED_BASE_URL}
+    username:  ${SERVUSSPEED_USERNAME}
+    password:  ${SERVUSSPEED_PASSWORD}
+
+  verbyndich:
+    base-url: ${VERBYNDICH_BASE_URL}
+    api-key:   ${VERBYNDICH_API_KEY}
+
+  webwunder:
+    endpoint:            ${WEBWUNDER_ENDPOINT}
+    api-key:             ${WEBWUNDER_API_KEY}
+    connect-timeout-ms:  ${WEBWUNDER_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms:     ${WEBWUNDER_READ_TIMEOUT_MS:8000}
+
+  byteme:
+    api-key: ${BYTEME_API_KEY}
+
+  pingperfect:
+    baseUrl:  ${PINGPERFECT_BASE_URL}
+    clientId: ${PINGPERFECT_CLIENT_ID}
+    secret:   ${PINGPERFECT_SECRET}
+
+
+
