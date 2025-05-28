@@ -12,8 +12,7 @@ This project provides a fast and user-friendly way to compare internet offers fr
   ```bash
   docker compose up
   ```
-  Pls note that you need keys to access the apis. Create a .env file as well as application.yml file and parse them there.
-  I didnt add application.yml file, since even though secrets aren't hardcoded, this file reveals which secrets exist (e.g., API keys, DB credentials, service names), which can aid       attackers
+  Pls note that you need keys to access the apis. Create a .env file and check the application.yml file to know how to name your env variabels.
 
 ## ☁️ Hosting & Infrastructure
 
