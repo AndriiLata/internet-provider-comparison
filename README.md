@@ -2,6 +2,9 @@
 
 This project provides a fast and user-friendly way to compare internet offers from different providers in Germany.
 
+<img width="1436" alt="image" src="https://github.com/user-attachments/assets/ae26509c-d620-4da9-80d3-973174fe5a93" />
+
+
 ## 🔗 Access the Project
 
 - **Live App**: [https://frontend-253516409283.europe-west1.run.app/](https://frontend-253516409283.europe-west1.run.app/)
