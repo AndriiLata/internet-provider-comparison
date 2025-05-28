@@ -2,22 +2,19 @@ version: "3.9"
 
 services:
 
-  # ────────────────────────────
   # Spring-Boot backend
-  # ────────────────────────────
   backend:
-    build: ./backend               # uses backend/Dockerfile
+    build: ./backend               
     env_file: .env                 
     ports:
       - "8080:8080"
 
-  # ────────────────────────────
+
   # Vite/React frontend
-  # ────────────────────────────
   frontend:
-    build: ./frontend              # uses frontend/Dockerfile
+    build: ./frontend              
     depends_on:
       - backend
     ports:
-      - "5173:80"                  # keep 5173 so your React code’s CORS stays valid
+      - "5173:80"                  
 
