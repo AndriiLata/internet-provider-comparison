@@ -9,6 +9,7 @@ This project provides a fast and user-friendly way to compare internet offers fr
   ```bash
   docker compose up
   ```
+  Pls note that you need keys to access the apis. Create a .env file and parse them there.
 
 ## ☁️ Hosting & Infrastructure
 
