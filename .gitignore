@@ -32,7 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 
-application.yml
+
 .env
 application-dev.ymlbackend/target/
 
