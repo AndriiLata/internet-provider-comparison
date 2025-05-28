@@ -2,11 +2,11 @@
 spring:
   r2dbc:
     pool:
-      enabled: true          # default, but be explicit
+      enabled: true
       initial-size: 3        # pre-warm connections
       max-size: 10
 
-      # ---- validation / timeout tweaks ----
+      # validation / timeout tweaks
       max-create-connection-time: 10s   # wait for Neon to wake
       validation-query: SELECT 1
       validation-depth: LOCAL           # cheaper ping
