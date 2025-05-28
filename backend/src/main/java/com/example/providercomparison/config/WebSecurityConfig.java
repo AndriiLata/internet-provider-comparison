@@ -15,36 +15,28 @@ import java.util.List;
 @Configuration
 public class WebSecurityConfig {
 
-    /**
-     * All endpoints are public (no login), CSRF is off, and the default
-     * login form & HTTP Basic prompt are disabled so that Spring Security
-     * does not interfere with your API.
-     */
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // ——— request authorisation ———
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // CORS pre-flight
                         .anyRequest().permitAll()
                 )
 
-                // ——— stateless API tweaks ———
                 .csrf(csrf -> csrf.disable())
                 .httpBasic(basic -> basic.disable())
                 .formLogin(form -> form.disable())
 
-                // ——— CORS for React dev server ———
+                // CORS for the frontend
                 .cors(Customizer.withDefaults());
 
         return http.build();
     }
 
-    /**
-     * Allow the Vite dev server (port 5173) and the nginx container (port 80)
-     * to call the backend from the browser.
-     */
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
