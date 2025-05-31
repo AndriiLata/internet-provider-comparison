@@ -1,4 +1,3 @@
-// src/main/java/com/example/providercomparison/dto/provider/byteme/ByteMeClientImpl.java
 package com.example.providercomparison.dto.provider.byteme;
 
 import com.example.providercomparison.dto.provider.byteme.model.ByteMeCsvOffer;
