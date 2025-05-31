@@ -1,4 +1,3 @@
-// src/main/java/com/example/providercomparison/dto/provider/pingperfect/PingPerfectProvider.java
 package com.example.providercomparison.dto.provider.pingperfect;
 
 import com.example.providercomparison.dto.provider.OfferProvider;
