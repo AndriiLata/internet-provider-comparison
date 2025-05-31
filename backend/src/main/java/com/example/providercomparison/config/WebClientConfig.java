@@ -1,4 +1,3 @@
-// src/main/java/com/example/providercomparison/config/WebClientConfig.java
 package com.example.providercomparison.config;
 
 import org.springframework.context.annotation.Bean;
