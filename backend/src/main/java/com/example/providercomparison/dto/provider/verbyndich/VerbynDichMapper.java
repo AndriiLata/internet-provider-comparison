@@ -1,4 +1,3 @@
-// src/main/java/com/example/providercomparison/dto/provider/verbyndich/VerbynDichMapper.java
 package com.example.providercomparison.dto.provider.verbyndich;
 
 import com.example.providercomparison.dto.provider.verbyndich.model.VerbynDichResponse;
